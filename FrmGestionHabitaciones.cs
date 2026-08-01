@@ -1,6 +1,7 @@
 ﻿using HotelZormat.Negocio;
 using HotelZormat.Negocio.Modelo;
 using System;
+using Habitacion = HotelZormat.Modelo.Habitacion;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;

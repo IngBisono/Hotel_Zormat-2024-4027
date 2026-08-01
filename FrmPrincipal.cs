@@ -10,9 +10,9 @@ using System.Windows.Forms;
 
 namespace Hotel_Zormat
 {
-    public partial class FrmPrincipal : Form
+    public partial class FrmLogin : Form
     {
-        public FrmPrincipal()
+        public FrmLogin()
         {
             InitializeComponent();
         }

@@ -101,6 +101,7 @@
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
     </Compile>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -120,6 +121,13 @@
       <Project>{75b00f5f-81b2-4ef7-ab61-1eee50806683}</Project>
       <Name>HotelZormat.Negocio</Name>
     </ProjectReference>
+    <ProjectReference Include="..\HotelZormat.Negocio\HotelZormat.Modelo\HotelZormat.Modelo.csproj">
+      <Project>{2ae16bbd-1e3f-4179-8e4d-576532413272}</Project>
+      <Name>HotelZormat.Modelo</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Logo_Hotel_Bisono.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

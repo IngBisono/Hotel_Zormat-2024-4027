@@ -46,8 +46,89 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FrmCheckInOut.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmCheckInOut.Designer.cs">
+      <DependentUpon>FrmCheckInOut.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmReportes.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmReportes.Designer.cs">
+      <DependentUpon>FrmReportes.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmFactura.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmFactura.Designer.cs">
+      <DependentUpon>FrmFactura.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmReservas.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmReservas.Designer.cs">
+      <DependentUpon>FrmReservas.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmHuespedes.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmHuespedes.Designer.cs">
+      <DependentUpon>FrmHuespedes.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmHabitaciones.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmHabitaciones.Designer.cs">
+      <DependentUpon>FrmHabitaciones.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmDashboardHabitaciones.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmDashboardHabitaciones.Designer.cs">
+      <DependentUpon>FrmDashboardHabitaciones.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmBitacora.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmBitacora.Designer.cs">
+      <DependentUpon>FrmBitacora.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FrmLogin.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FrmLogin.Designer.cs">
+      <DependentUpon>FrmLogin.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="FrmBitacora.resx">
+      <DependentUpon>FrmBitacora.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmCheckInOut.resx">
+      <DependentUpon>FrmCheckInOut.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmDashboardHabitaciones.resx">
+      <DependentUpon>FrmDashboardHabitaciones.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmFactura.resx">
+      <DependentUpon>FrmFactura.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmHabitaciones.resx">
+      <DependentUpon>FrmHabitaciones.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmHuespedes.resx">
+      <DependentUpon>FrmHuespedes.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmLogin.resx">
+      <DependentUpon>FrmLogin.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmReportes.resx">
+      <DependentUpon>FrmReportes.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FrmReservas.resx">
+      <DependentUpon>FrmReservas.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>

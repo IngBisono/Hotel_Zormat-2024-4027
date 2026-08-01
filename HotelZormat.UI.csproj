@@ -46,53 +46,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DiasSemana.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="DiasSemana.Designer.cs">
-      <DependentUpon>DiasSemana.cs</DependentUpon>
-    </Compile>
-    <Compile Include="FrmGestionHabitaciones.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="FrmGestionHabitaciones.Designer.cs">
-      <DependentUpon>FrmGestionHabitaciones.cs</DependentUpon>
-    </Compile>
-    <Compile Include="FrmHabitacion.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="FrmHabitacion.Designer.cs">
-      <DependentUpon>FrmHabitacion.cs</DependentUpon>
-    </Compile>
-    <Compile Include="FrmNuevaReserva.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="FrmNuevaReserva.Designer.cs">
-      <DependentUpon>FrmNuevaReserva.cs</DependentUpon>
-    </Compile>
-    <Compile Include="FrmPrincipal.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="FrmPrincipal.Designer.cs">
-      <DependentUpon>FrmPrincipal.cs</DependentUpon>
-    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="DiasSemana.resx">
-      <DependentUpon>DiasSemana.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="FrmGestionHabitaciones.resx">
-      <DependentUpon>FrmGestionHabitaciones.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="FrmHabitacion.resx">
-      <DependentUpon>FrmHabitacion.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="FrmNuevaReserva.resx">
-      <DependentUpon>FrmNuevaReserva.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="FrmPrincipal.resx">
-      <DependentUpon>FrmPrincipal.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>

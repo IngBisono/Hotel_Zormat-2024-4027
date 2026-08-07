@@ -1,3 +1,4 @@
+using Hotel_Zormat.Estilos;
 using HotelZormat.Modelo;
 using HotelZormat.Negocio;
 using HotelZormat.Negocio.Excepciones;
@@ -33,20 +34,13 @@ namespace Hotel_Zormat
 
         private void ConfigurarFormulario()
         {
-            Text = "Hotel Zormat - Habitaciones";
+            TemaVisual.PrepararFormulario(this, "Hotel Bisono - Habitaciones");
             StartPosition = FormStartPosition.CenterParent;
-            BackColor = ColorTranslator.FromHtml("#F5F8FB");
-            flpHabitaciones.BackColor = ColorTranslator.FromHtml("#F5F8FB");
             flpHabitaciones.AutoScroll = true;
 
-            dgvHabitaciones.ReadOnly = true;
-            dgvHabitaciones.AllowUserToAddRows = false;
-            dgvHabitaciones.AllowUserToDeleteRows = false;
-            dgvHabitaciones.MultiSelect = false;
-            dgvHabitaciones.SelectionMode =
-                DataGridViewSelectionMode.FullRowSelect;
-            dgvHabitaciones.AutoSizeColumnsMode =
-                DataGridViewAutoSizeColumnsMode.Fill;
+            ConfigurarDistribucion();
+
+            TemaVisual.EstilizarGrid(dgvHabitaciones);
 
             txtNumero.Mask = "000";
             txtNumero.PromptChar = ' ';
@@ -63,32 +57,72 @@ namespace Hotel_Zormat
             txtTarifaBase.ThousandsSeparator = true;
 
             cboTipo.DropDownStyle = ComboBoxStyle.DropDownList;
+            TemaVisual.EstilizarCombo(cboTipo);
+            TemaVisual.EstilizarCombo(cboEstado);
+            TemaVisual.EstilizarCombo(cboFiltroPiso);
+            TemaVisual.EstilizarCombo(cboFiltroEstado);
             cboTipo.Items.Clear();
-            cboTipo.Items.Add("Sencilla");
-            cboTipo.Items.Add("Doble");
-            cboTipo.Items.Add("Suite");
+
+            string[] tiposHabitacion = { "Sencilla", "Doble", "Suite" };
+
+            foreach (string tipo in tiposHabitacion)
+            {
+                cboTipo.Items.Add(tipo);
+            }
 
             cboEstado.DropDownStyle = ComboBoxStyle.DropDownList;
             cboEstado.Items.Clear();
-            cboEstado.Items.Add("Disponible");
-            cboEstado.Items.Add("Ocupada");
-            cboEstado.Items.Add("Reservada");
-            cboEstado.Items.Add("Limpieza");
 
             cboFiltroPiso.DropDownStyle = ComboBoxStyle.DropDownList;
             cboFiltroEstado.DropDownStyle = ComboBoxStyle.DropDownList;
             cboFiltroEstado.Items.Clear();
             cboFiltroEstado.Items.Add("Todos");
-            cboFiltroEstado.Items.Add("Disponible");
-            cboFiltroEstado.Items.Add("Ocupada");
-            cboFiltroEstado.Items.Add("Reservada");
-            cboFiltroEstado.Items.Add("Limpieza");
+
+            string[] estadosHabitacion =
+            {
+                "Disponible",
+                "Ocupada",
+                "Reservada",
+                "Limpieza"
+            };
+
+            foreach (string estado in estadosHabitacion)
+            {
+                cboEstado.Items.Add(estado);
+                cboFiltroEstado.Items.Add(estado);
+            }
+
             cboFiltroEstado.SelectedIndex = 0;
 
-            ConfigurarBoton(btnNuevo, "Nuevo", "#E9EFF5", "#133958");
-            ConfigurarBoton(btnGuardar, "Guardar", "#025897", "#FFFFFF");
-            ConfigurarBoton(btnEliminar, "Eliminar", "#D6483F", "#FFFFFF");
-            ConfigurarBoton(btnCancelar, "Cancelar", "#63798E", "#FFFFFF");
+            ConfigurarBoton(
+                btnNuevo,
+                "Nuevo",
+                TemaVisual.Glifos.Nuevo,
+                TemaVisual.Colores.TurquesaProfundo,
+                TemaVisual.Colores.Blanco,
+                TemaVisual.Colores.TurquesaPalmera);
+            ConfigurarBoton(
+                btnGuardar,
+                "Guardar",
+                TemaVisual.Glifos.Guardar,
+                TemaVisual.Colores.AzulPrimario,
+                TemaVisual.Colores.Blanco,
+                TemaVisual.Colores.AzulHover);
+            ConfigurarBoton(
+                btnEliminar,
+                "Eliminar",
+                TemaVisual.Glifos.Eliminar,
+                TemaVisual.Colores.Rojo,
+                TemaVisual.Colores.Blanco,
+                Color.FromArgb(180, 56, 48));
+            ConfigurarBoton(
+                btnCancelar,
+                "Cancelar",
+                TemaVisual.Glifos.Cancelar,
+                TemaVisual.Colores.FondoSecundario,
+                TemaVisual.Colores.Texto,
+                TemaVisual.Colores.BordeSutil);
+            btnEliminar.Enabled = false;
 
             Load += FrmHabitaciones_Load;
             dgvHabitaciones.SelectionChanged +=
@@ -104,25 +138,192 @@ namespace Hotel_Zormat
                 filtros_SelectedIndexChanged;
         }
 
+        // Organiza la lista, los filtros y el formulario de edicion.
+        private void ConfigurarDistribucion()
+        {
+            Size = new Size(1100, 680);
+            MinimumSize = new Size(940, 600);
+
+            splitContainer1.Parent = this;
+            splitContainer1.Dock = DockStyle.Fill;
+            splitContainer1.Orientation = Orientation.Vertical;
+            splitContainer1.SplitterDistance = 620;
+            splitContainer1.SplitterWidth = 6;
+            splitContainer1.Panel1MinSize = 400;
+            splitContainer1.Panel2MinSize = 340;
+            splitContainer1.Panel1.Padding = new Padding(16, 12, 8, 16);
+            splitContainer1.Panel2.Padding = new Padding(8, 12, 16, 16);
+            splitContainer1.BackColor = TemaVisual.Colores.FondoClaro;
+            splitContainer1.Panel1.BackColor = TemaVisual.Colores.FondoClaro;
+            splitContainer1.Panel2.BackColor = TemaVisual.Colores.FondoClaro;
+            // El acoplamiento se resuelve del último control al primero, así
+            // que el control acoplado a Fill debe quedar al frente para
+            // repartirse el espacio que deja libre el encabezado superior.
+            Panel encabezado = TemaVisual.CrearEncabezado(
+                "Gestión de Habitaciones",
+                TemaVisual.Glifos.Habitacion);
+            Controls.Add(encabezado);
+            splitContainer1.BringToFront();
+
+            flpHabitaciones.Controls.Clear();
+            flpHabitaciones.Parent = splitContainer1.Panel1;
+            flpHabitaciones.Dock = DockStyle.Top;
+            flpHabitaciones.Height = 58;
+            flpHabitaciones.AutoScroll = false;
+            flpHabitaciones.FlowDirection = FlowDirection.LeftToRight;
+            flpHabitaciones.WrapContents = false;
+            flpHabitaciones.Padding = new Padding(14, 14, 14, 10);
+            flpHabitaciones.BackColor = TemaVisual.Colores.FondoSecundario;
+
+            Label lblFiltroPiso = CrearEtiqueta("Piso:");
+            Label lblFiltroEstado = CrearEtiqueta("Estado:");
+
+            cboFiltroPiso.Width = 130;
+            cboFiltroEstado.Width = 145;
+            cboFiltroPiso.Margin = new Padding(4, 2, 16, 0);
+            cboFiltroEstado.Margin = new Padding(4, 2, 0, 0);
+
+            flpHabitaciones.Controls.Add(lblFiltroPiso);
+            flpHabitaciones.Controls.Add(cboFiltroPiso);
+            flpHabitaciones.Controls.Add(lblFiltroEstado);
+            flpHabitaciones.Controls.Add(cboFiltroEstado);
+
+            dgvHabitaciones.Parent = splitContainer1.Panel1;
+            dgvHabitaciones.Dock = DockStyle.Fill;
+            dgvHabitaciones.Margin = new Padding(0);
+
+            // La tabla debe quedar al frente para que el acoplamiento a Fill se
+            // resuelva en último lugar; si no, ocuparía todo el panel y la
+            // barra de filtros se dibujaría encima tapando sus encabezados.
+            flpHabitaciones.SendToBack();
+            dgvHabitaciones.BringToFront();
+
+            tableLayoutPanel1.Parent = splitContainer1.Panel2;
+            tableLayoutPanel1.Controls.Clear();
+            tableLayoutPanel1.ColumnStyles.Clear();
+            tableLayoutPanel1.RowStyles.Clear();
+            tableLayoutPanel1.Dock = DockStyle.Fill;
+            tableLayoutPanel1.Padding = new Padding(20, 16, 20, 16);
+            tableLayoutPanel1.BackColor = TemaVisual.Colores.Blanco;
+            tableLayoutPanel1.ColumnCount = 2;
+            tableLayoutPanel1.RowCount = 8;
+            tableLayoutPanel1.GrowStyle = TableLayoutPanelGrowStyle.FixedSize;
+            tableLayoutPanel1.ColumnStyles.Add(
+                new ColumnStyle(SizeType.Absolute, 118F));
+            tableLayoutPanel1.ColumnStyles.Add(
+                new ColumnStyle(SizeType.Percent, 100F));
+
+            tableLayoutPanel1.RowStyles.Add(
+                new RowStyle(SizeType.Absolute, 40F));
+
+            // Las filas crecen respecto al diseño anterior porque cada campo
+            // va ahora dentro de un marco redondeado con su propio relleno.
+            for (int fila = 0; fila < 6; fila++)
+            {
+                tableLayoutPanel1.RowStyles.Add(
+                    new RowStyle(SizeType.Absolute, 54F));
+            }
+
+            tableLayoutPanel1.RowStyles.Add(
+                new RowStyle(SizeType.Percent, 100F));
+
+            Label tituloFicha = TemaVisual.CrearTituloSeccion(
+                "Ficha de la habitación",
+                TemaVisual.Glifos.Habitacion);
+            tituloFicha.Dock = DockStyle.Fill;
+            tituloFicha.BackColor = TemaVisual.Colores.Blanco;
+            tableLayoutPanel1.Controls.Add(tituloFicha, 0, 0);
+            tableLayoutPanel1.SetColumnSpan(tituloFicha, 2);
+
+            AgregarCampo("Número", txtNumero, 1);
+            AgregarCampo("Piso", numPiso, 2);
+            AgregarCampo("Tipo", cboTipo, 3);
+            AgregarCampo("Estado", cboEstado, 4);
+            AgregarCampo("Tarifa base", txtTarifaBase, 5);
+            AgregarCampo("Capacidad", numCapacidad, 6);
+
+            FlowLayoutPanel barraBotones = new FlowLayoutPanel();
+            barraBotones.Dock = DockStyle.Fill;
+            barraBotones.FlowDirection = FlowDirection.LeftToRight;
+            barraBotones.WrapContents = true;
+            barraBotones.BackColor = TemaVisual.Colores.Blanco;
+            barraBotones.Padding = new Padding(0, 16, 0, 0);
+
+            btnNuevo.Size = new Size(112, 36);
+            btnGuardar.Size = new Size(112, 36);
+            btnEliminar.Size = new Size(112, 36);
+            btnCancelar.Size = new Size(112, 36);
+            btnNuevo.Margin = new Padding(0, 3, 8, 3);
+            btnGuardar.Margin = new Padding(0, 3, 8, 3);
+            btnEliminar.Margin = new Padding(0, 3, 8, 3);
+            btnCancelar.Margin = new Padding(0, 3, 0, 3);
+
+            barraBotones.Controls.Add(btnNuevo);
+            barraBotones.Controls.Add(btnGuardar);
+            barraBotones.Controls.Add(btnEliminar);
+            barraBotones.Controls.Add(btnCancelar);
+
+            tableLayoutPanel1.Controls.Add(barraBotones, 0, 7);
+            tableLayoutPanel1.SetColumnSpan(barraBotones, 2);
+        }
+
+        // Agrega una etiqueta y su control en una fila del formulario.
+        //
+        // Las cajas de texto y los numéricos se envuelven en un marco con
+        // esquinas redondeadas, porque WinForms no permite curvar el borde de
+        // esos controles directamente. Las listas desplegables conservan su
+        // borde nativo, que no es personalizable sin repintar todo el control.
+        private void AgregarCampo(string texto, Control control, int fila)
+        {
+            Label etiqueta = CrearEtiqueta(texto);
+            tableLayoutPanel1.Controls.Add(etiqueta, 0, fila);
+
+            ComboBox lista = control as ComboBox;
+            if (lista != null)
+            {
+                lista.Dock = DockStyle.Fill;
+                lista.Margin = new Padding(3, 12, 3, 12);
+                tableLayoutPanel1.Controls.Add(lista, 1, fila);
+                return;
+            }
+
+            Panel marco = TemaVisual.EnvolverCampo(
+                control,
+                TemaVisual.Colores.Blanco);
+            marco.Dock = DockStyle.Fill;
+            marco.Margin = new Padding(3, 7, 3, 7);
+            tableLayoutPanel1.Controls.Add(marco, 1, fila);
+        }
+
+        // Crea una etiqueta sencilla para los filtros y campos.
+        private static Label CrearEtiqueta(string texto)
+        {
+            Label etiqueta = new Label();
+            etiqueta.Text = texto;
+            etiqueta.AutoSize = true;
+            etiqueta.Anchor = AnchorStyles.Left;
+            etiqueta.Margin = new Padding(3, 8, 3, 3);
+            etiqueta.Font = TemaVisual.Fuentes.Etiqueta;
+            etiqueta.ForeColor = TemaVisual.Colores.Texto;
+            return etiqueta;
+        }
+
         private void ConfigurarBoton(
             Button boton,
             string texto,
-            string colorFondo,
-            string colorTexto)
+            string glifo,
+            Color colorFondo,
+            Color colorTexto,
+            Color colorHover)
         {
-            boton.Text = texto;
-            boton.BackColor = ColorTranslator.FromHtml(colorFondo);
-            boton.ForeColor = ColorTranslator.FromHtml(colorTexto);
-            boton.FlatStyle = FlatStyle.Flat;
-            boton.UseVisualStyleBackColor = false;
+            TemaVisual.EstilizarBoton(boton, colorFondo, colorTexto, colorHover);
+            TemaVisual.PonerGlifo(boton, glifo, texto);
         }
 
         private void FrmHabitaciones_Load(object sender, EventArgs e)
         {
-            btnEliminar.Enabled =
-                AutorizacionService.EsAdministrador(_usuarioActual);
-
             LimpiarFormulario();
+            ActualizarEstadoBotonEliminar();
             CargarDatos();
         }
 
@@ -180,6 +381,8 @@ namespace Hotel_Zormat
 
         private void CargarHabitacionesFiltradas()
         {
+            LimpiarFormulario();
+
             try
             {
                 int? piso = ObtenerPisoSeleccionado();
@@ -189,6 +392,7 @@ namespace Hotel_Zormat
                 dgvHabitaciones.DataSource =
                     _habitacionService.Filtrar(piso, estado);
 
+                LimpiarFormulario();
                 ColorearFilas();
             }
             catch (SqlException)
@@ -256,22 +460,7 @@ namespace Hotel_Zormat
 
         private Color ObtenerColorSuave(string estado)
         {
-            if (estado == "Disponible")
-            {
-                return ColorTranslator.FromHtml("#DDF3E3");
-            }
-
-            if (estado == "Ocupada")
-            {
-                return ColorTranslator.FromHtml("#F7DEDC");
-            }
-
-            if (estado == "Reservada")
-            {
-                return ColorTranslator.FromHtml("#FCEBD8");
-            }
-
-            return ColorTranslator.FromHtml("#DFE7FA");
+            return TemaVisual.Colores.PorEstadoSuave(estado);
         }
 
         private void dgvHabitaciones_SelectionChanged(
@@ -304,6 +493,7 @@ namespace Hotel_Zormat
             cboEstado.SelectedItem = habitacion.Estado;
             txtTarifaBase.Value = habitacion.TarifaBase;
             numCapacidad.Value = habitacion.Capacidad;
+            ActualizarEstadoBotonEliminar();
         }
 
         private void btnNuevo_Click(object sender, EventArgs e)
@@ -331,12 +521,14 @@ namespace Hotel_Zormat
             dgvHabitaciones.ClearSelection();
             dgvHabitaciones.CurrentCell = null;
             _limpiandoFormulario = false;
+            ActualizarEstadoBotonEliminar();
         }
 
         private void btnGuardar_Click(object sender, EventArgs e)
         {
             try
             {
+                btnGuardar.Enabled = false;
                 Habitacion habitacion = CrearHabitacionDesdeFormulario();
 
                 if (_numeroSeleccionado.HasValue)
@@ -357,7 +549,7 @@ namespace Hotel_Zormat
             {
                 MostrarError(error.Message);
             }
-            catch (FormatException error)
+            catch (InvalidOperationException error)
             {
                 MostrarError(error.Message);
             }
@@ -365,7 +557,7 @@ namespace Hotel_Zormat
             {
                 MostrarError(error.Message);
             }
-            catch (InvalidOperationException error)
+            catch (FormatException error)
             {
                 MostrarError(error.Message);
             }
@@ -379,6 +571,10 @@ namespace Hotel_Zormat
             {
                 MostrarError(
                     "Ocurrió un error al guardar la habitación.");
+            }
+            finally
+            {
+                btnGuardar.Enabled = true;
             }
         }
 
@@ -438,6 +634,7 @@ namespace Hotel_Zormat
 
             try
             {
+                btnEliminar.Enabled = false;
                 _habitacionService.Eliminar(
                     _numeroSeleccionado.Value,
                     _usuarioActual);
@@ -465,6 +662,19 @@ namespace Hotel_Zormat
                 MostrarError(
                     "Ocurrió un error al eliminar la habitación.");
             }
+            finally
+            {
+                ActualizarEstadoBotonEliminar();
+            }
+        }
+
+        private void ActualizarEstadoBotonEliminar()
+        {
+            bool esAdministrador =
+                AutorizacionService.EsAdministrador(_usuarioActual);
+
+            btnEliminar.Enabled =
+                esAdministrador && _numeroSeleccionado.HasValue;
         }
 
         private void filtros_SelectedIndexChanged(
@@ -498,7 +708,7 @@ namespace Hotel_Zormat
         {
             MessageBox.Show(
                 mensaje,
-                "Hotel Zormat",
+                "Hotel Bisono",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Warning);
         }
@@ -507,7 +717,7 @@ namespace Hotel_Zormat
         {
             MessageBox.Show(
                 mensaje,
-                "Hotel Zormat",
+                "Hotel Bisono",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
         }

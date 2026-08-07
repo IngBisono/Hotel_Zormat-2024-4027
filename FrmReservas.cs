@@ -1,3 +1,4 @@
+using Hotel_Zormat.Estilos;
 using HotelZormat.Modelo;
 using HotelZormat.Negocio;
 using System;
@@ -32,15 +33,15 @@ namespace Hotel_Zormat
 
             if (_usuarioActual != null)
             {
-                Text = "Reservas - " + _usuarioActual.NombreCompleto;
+                Text = "Hotel Bisono - Reservas - " +
+                    _usuarioActual.NombreCompleto;
             }
         }
 
         // Prepara los textos, colores y eventos del formulario.
         private void ConfigurarFormulario()
         {
-            Text = "Gestion de reservas";
-            BackColor = Color.FromArgb(245, 248, 251);
+            TemaVisual.PrepararFormulario(this, "Hotel Bisono - Reservas");
 
             ConfigurarCombo(cboHuesped);
             ConfigurarCombo(cboHabitacion);
@@ -63,20 +64,30 @@ namespace Hotel_Zormat
             dtpCheckOut.Format = DateTimePickerFormat.Short;
             dtpCheckIn.Value = DateTime.Today;
             dtpCheckOut.Value = DateTime.Today.AddDays(1);
+            TemaVisual.EstilizarFecha(dtpCheckIn);
+            TemaVisual.EstilizarFecha(dtpCheckOut);
 
             lblNochesCalculadas.Text = "Noches: 1";
             lblMontoCalculado.Text = "Monto estimado: RD$0.00";
-            lblNochesCalculadas.BackColor = Color.FromArgb(253, 224, 146);
-            lblMontoCalculado.BackColor = Color.FromArgb(253, 224, 146);
-            lblNochesCalculadas.ForeColor = Color.FromArgb(46, 66, 86);
-            lblMontoCalculado.ForeColor = Color.FromArgb(46, 66, 86);
+            lblNochesCalculadas.Font = TemaVisual.Fuentes.CuerpoNegrita;
+            lblMontoCalculado.Font = TemaVisual.Fuentes.MontoTotal;
+            lblNochesCalculadas.ForeColor = TemaVisual.Colores.AzulMarino;
+            lblMontoCalculado.ForeColor = TemaVisual.Colores.AzulProfundo;
+            lblNochesCalculadas.BackColor = Color.Transparent;
+            lblMontoCalculado.BackColor = Color.Transparent;
 
-            btnGuardar.Text = "Guardar reserva";
-            btnGuardar.BackColor = Color.FromArgb(2, 88, 151);
-            btnGuardar.ForeColor = Color.White;
-            btnGuardar.FlatStyle = FlatStyle.Flat;
+            TemaVisual.EstilizarBoton(
+                btnGuardar,
+                TemaVisual.Colores.AzulPrimario,
+                TemaVisual.Colores.Blanco,
+                TemaVisual.Colores.AzulHover);
+            TemaVisual.PonerGlifo(
+                btnGuardar,
+                TemaVisual.Glifos.Guardar,
+                "Guardar reserva");
 
             ConfigurarGrid(dgvReservasProximas);
+            ConfigurarDistribucion();
 
             Load += FrmReservas_Load;
             btnGuardar.Click += btnGuardar_Click;
@@ -84,6 +95,131 @@ namespace Hotel_Zormat
             dtpCheckOut.ValueChanged += DatosReserva_Changed;
             cboHabitacion.SelectedIndexChanged += DatosReserva_Changed;
             cboTemporada.SelectedIndexChanged += DatosReserva_Changed;
+        }
+
+        // Organiza los campos en dos columnas y deja crecer la tabla.
+        private void ConfigurarDistribucion()
+        {
+            Size = new Size(840, 720);
+            MinimumSize = new Size(800, 640);
+
+            Controls.Add(tableLayoutPanel1);
+            tableLayoutPanel1.Dock = DockStyle.Fill;
+            tableLayoutPanel1.Padding = new Padding(22, 18, 22, 18);
+            tableLayoutPanel1.BackColor = TemaVisual.Colores.FondoClaro;
+
+            // El encabezado se acopla arriba y la tabla al resto: el control
+            // acoplado a Fill debe quedar al frente porque el acoplamiento se
+            // resuelve del último control al primero.
+            Panel encabezado = TemaVisual.CrearEncabezado(
+                "Nueva Reserva",
+                TemaVisual.Glifos.Reserva);
+            Controls.Add(encabezado);
+            tableLayoutPanel1.BringToFront();
+
+            tableLayoutPanel1.Controls.Clear();
+            tableLayoutPanel1.ColumnStyles.Clear();
+            tableLayoutPanel1.RowStyles.Clear();
+            tableLayoutPanel1.ColumnCount = 2;
+            tableLayoutPanel1.RowCount = 10;
+            tableLayoutPanel1.ColumnStyles.Add(
+                new ColumnStyle(SizeType.Absolute, 150F));
+            tableLayoutPanel1.ColumnStyles.Add(
+                new ColumnStyle(SizeType.Percent, 100F));
+
+            for (int fila = 0; fila < 9; fila++)
+            {
+                tableLayoutPanel1.RowStyles.Add(
+                    new RowStyle(SizeType.AutoSize));
+            }
+
+            tableLayoutPanel1.RowStyles.Add(
+                new RowStyle(SizeType.Percent, 100F));
+
+            AgregarCampo("Huésped", cboHuesped, 0);
+            AgregarCampo("Habitación", cboHabitacion, 1);
+            AgregarCampo("Fecha de entrada", dtpCheckIn, 2);
+            AgregarCampo("Fecha de salida", dtpCheckOut, 3);
+            AgregarCampo("Temporada", cboTemporada, 4);
+            AgregarCampo("Estado", cboEstadoReserva, 5);
+
+            // Tarjeta de resumen con el degradado cálido del atardecer.
+            panel1.Controls.Clear();
+            panel1.Dock = DockStyle.Fill;
+            panel1.Height = 88;
+            panel1.Margin = new Padding(6, 10, 6, 10);
+            panel1.Padding = new Padding(18, 12, 18, 12);
+            panel1.BorderStyle = BorderStyle.None;
+            panel1.BackColor = TemaVisual.Colores.FondoClaro;
+            panel1.Paint += delegate (object remitente, PaintEventArgs e)
+            {
+                Control lienzo = (Control)remitente;
+                if (lienzo.Width <= 1 || lienzo.Height <= 1)
+                {
+                    return;
+                }
+
+                TemaVisual.PintarAtardecer(e.Graphics, lienzo.ClientRectangle);
+            };
+            panel1.Resize += delegate { panel1.Invalidate(); };
+            TemaVisual.AplicarEsquinasRedondeadas(panel1, 12);
+
+            lblNochesCalculadas.AutoSize = false;
+            lblNochesCalculadas.Dock = DockStyle.Top;
+            lblNochesCalculadas.Height = 22;
+            lblNochesCalculadas.TextAlign = ContentAlignment.MiddleLeft;
+
+            lblMontoCalculado.AutoSize = false;
+            lblMontoCalculado.Dock = DockStyle.Fill;
+            lblMontoCalculado.TextAlign = ContentAlignment.MiddleLeft;
+
+            panel1.Controls.Add(lblMontoCalculado);
+            panel1.Controls.Add(lblNochesCalculadas);
+            tableLayoutPanel1.Controls.Add(panel1, 0, 6);
+            tableLayoutPanel1.SetColumnSpan(panel1, 2);
+
+            btnGuardar.AutoSize = false;
+            btnGuardar.Size = new Size(190, 38);
+            btnGuardar.Anchor = AnchorStyles.Left;
+            btnGuardar.Margin = new Padding(6, 6, 6, 10);
+            tableLayoutPanel1.Controls.Add(btnGuardar, 1, 7);
+
+            Label tituloTabla = TemaVisual.CrearTituloSeccion(
+                "Reservas próximas",
+                TemaVisual.Glifos.Reserva);
+            tituloTabla.AutoSize = false;
+            tituloTabla.Dock = DockStyle.Fill;
+            tituloTabla.Margin = new Padding(6, 10, 6, 4);
+            tableLayoutPanel1.Controls.Add(tituloTabla, 0, 8);
+            tableLayoutPanel1.SetColumnSpan(tituloTabla, 2);
+
+            dgvReservasProximas.Dock = DockStyle.Fill;
+            dgvReservasProximas.Margin = new Padding(6);
+            tableLayoutPanel1.Controls.Add(dgvReservasProximas, 0, 9);
+            tableLayoutPanel1.SetColumnSpan(dgvReservasProximas, 2);
+
+            flpReservas.Visible = false;
+        }
+
+        // Agrega una etiqueta y su campo en una fila de la tabla.
+        private void AgregarCampo(
+            string texto,
+            Control campo,
+            int fila)
+        {
+            Label etiqueta = new Label();
+            etiqueta.Text = texto;
+            etiqueta.AutoSize = true;
+            etiqueta.Anchor = AnchorStyles.Left;
+            etiqueta.Margin = new Padding(6, 12, 6, 6);
+            etiqueta.Font = TemaVisual.Fuentes.Etiqueta;
+            etiqueta.ForeColor = TemaVisual.Colores.Texto;
+
+            campo.Dock = DockStyle.Fill;
+            campo.Margin = new Padding(6, 8, 6, 8);
+
+            tableLayoutPanel1.Controls.Add(etiqueta, 0, fila);
+            tableLayoutPanel1.Controls.Add(campo, 1, fila);
         }
 
         // Carga los datos necesarios al abrir la ventana.
@@ -95,6 +231,23 @@ namespace Hotel_Zormat
                 CargarHabitacionesDisponibles();
                 CargarReservasProximas();
                 CalcularResumen();
+            }
+            catch (FormatException ex)
+            {
+                MostrarAdvertencia(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                MostrarAdvertencia(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                MostrarAdvertencia(ex.Message);
+            }
+            catch (SqlException)
+            {
+                MostrarAdvertencia(
+                    "No se pudieron cargar las reservas desde la base de datos.");
             }
             catch (Exception ex)
             {
@@ -111,6 +264,8 @@ namespace Hotel_Zormat
         // Guarda una reserva con los datos escritos.
         private void btnGuardar_Click(object sender, EventArgs e)
         {
+            btnGuardar.Enabled = false;
+
             try
             {
                 Reserva reserva = CrearReservaDesdeFormulario();
@@ -118,7 +273,7 @@ namespace Hotel_Zormat
 
                 MessageBox.Show(
                     "La reserva fue guardada correctamente.",
-                    "Hotel Zormat",
+                    "Hotel Bisono",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
 
@@ -146,6 +301,10 @@ namespace Hotel_Zormat
             catch (Exception ex)
             {
                 MostrarError(ex);
+            }
+            finally
+            {
+                btnGuardar.Enabled = true;
             }
         }
 
@@ -242,8 +401,7 @@ namespace Hotel_Zormat
 
             if (habitacion == null)
             {
-                lblNochesCalculadas.Text = "Noches: 0";
-                lblMontoCalculado.Text = "Monto estimado: RD$0.00";
+                LimpiarResumen();
                 return;
             }
 
@@ -262,11 +420,29 @@ namespace Hotel_Zormat
                 lblMontoCalculado.Text =
                     "Monto estimado: RD$" + monto.ToString("N2");
             }
+            catch (FormatException)
+            {
+                LimpiarResumen();
+            }
+            catch (ArgumentException)
+            {
+                LimpiarResumen();
+            }
+            catch (InvalidOperationException)
+            {
+                LimpiarResumen();
+            }
             catch (Exception)
             {
-                lblNochesCalculadas.Text = "Noches: 0";
-                lblMontoCalculado.Text = "Monto estimado: RD$0.00";
+                LimpiarResumen();
             }
+        }
+
+        // Muestra valores vacios cuando el resumen no puede calcularse.
+        private void LimpiarResumen()
+        {
+            lblNochesCalculadas.Text = "Noches: 0";
+            lblMontoCalculado.Text = "Monto estimado: RD$0.00";
         }
 
         // Deja fechas y opciones listas para otra reserva.
@@ -294,19 +470,13 @@ namespace Hotel_Zormat
         private static void ConfigurarCombo(ComboBox combo)
         {
             combo.DropDownStyle = ComboBoxStyle.DropDownList;
+            TemaVisual.EstilizarCombo(combo);
         }
 
         // Configura la tabla de reservas para consulta.
         private static void ConfigurarGrid(DataGridView grid)
         {
-            grid.ReadOnly = true;
-            grid.AllowUserToAddRows = false;
-            grid.AllowUserToDeleteRows = false;
-            grid.MultiSelect = false;
-            grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
-            grid.BackgroundColor = Color.White;
-            grid.RowHeadersVisible = false;
+            TemaVisual.EstilizarGrid(grid);
         }
 
         // Muestra un mensaje que el usuario puede corregir.
@@ -322,16 +492,9 @@ namespace Hotel_Zormat
         // Muestra un error no esperado.
         private static void MostrarError(Exception error)
         {
-            string mensaje = error.Message;
-
-            if (error is SqlException)
-            {
-                mensaje = "No fue posible comunicarse con la base de datos.";
-            }
-
             MessageBox.Show(
-                mensaje,
-                "Hotel Zormat",
+                error.Message,
+                "Hotel Bisono",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
         }

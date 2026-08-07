@@ -1,6 +1,9 @@
+using Hotel_Zormat.Estilos;
 using HotelZormat.Modelo;
 using HotelZormat.Negocio;
+using HotelZormat.Negocio.Excepciones;
 using System;
+using System.Data.SqlClient;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -25,9 +28,52 @@ namespace Hotel_Zormat
 
         private void ConfigurarPantalla()
         {
-            Text = "Bitácora";
+            TemaVisual.PrepararFormulario(this, "Hotel Bisono - Bitácora");
             StartPosition = FormStartPosition.CenterParent;
-            BackColor = Color.FromArgb(245, 248, 251);
+            Size = new Size(960, 620);
+            MinimumSize = new Size(860, 560);
+
+            flpFiltrosBitacora.BackColor = TemaVisual.Colores.FondoSecundario;
+            flpFiltrosBitacora.Padding = new Padding(16, 13, 16, 10);
+            flpFiltrosBitacora.WrapContents = false;
+            flpFiltrosBitacora.Height = 60;
+
+            Label etiquetaAccion = new Label();
+            etiquetaAccion.Text = "Acción:";
+            etiquetaAccion.AutoSize = true;
+            etiquetaAccion.Font = TemaVisual.Fuentes.Etiqueta;
+            etiquetaAccion.ForeColor = TemaVisual.Colores.Texto;
+            etiquetaAccion.Margin = new Padding(0, 8, 6, 0);
+
+            Label etiquetaFecha = new Label();
+            etiquetaFecha.Text = "Fecha:";
+            etiquetaFecha.AutoSize = true;
+            etiquetaFecha.Font = TemaVisual.Fuentes.Etiqueta;
+            etiquetaFecha.ForeColor = TemaVisual.Colores.Texto;
+            etiquetaFecha.Margin = new Padding(18, 8, 6, 0);
+
+            // Distintivo que recuerda que la bitácora es sólo para
+            // administradores, coherente con la validación del Load.
+            Label distintivoAdmin = TemaVisual.CrearDistintivo(
+                "Solo administradores",
+                TemaVisual.Colores.SolAmarillo,
+                TemaVisual.Colores.AzulProfundo);
+            distintivoAdmin.Size = new Size(170, 28);
+            distintivoAdmin.Margin = new Padding(26, 4, 0, 0);
+
+            // Coloca los filtros dentro de la barra creada en el diseñador.
+            flpFiltrosBitacora.Controls.Add(etiquetaAccion);
+            flpFiltrosBitacora.Controls.Add(cboFiltroAccion);
+            flpFiltrosBitacora.Controls.Add(etiquetaFecha);
+            flpFiltrosBitacora.Controls.Add(dtpFiltroFecha);
+            flpFiltrosBitacora.Controls.Add(distintivoAdmin);
+
+            cboFiltroAccion.Width = 170;
+            cboFiltroAccion.Margin = new Padding(0, 4, 12, 0);
+            TemaVisual.EstilizarCombo(cboFiltroAccion);
+            dtpFiltroFecha.Width = 220;
+            dtpFiltroFecha.Margin = new Padding(0, 4, 0, 0);
+            TemaVisual.EstilizarFecha(dtpFiltroFecha);
 
             cboFiltroAccion.Items.Clear();
             cboFiltroAccion.Items.Add("Todas");
@@ -41,20 +87,39 @@ namespace Hotel_Zormat
             dtpFiltroFecha.ShowCheckBox = true;
             dtpFiltroFecha.Checked = false;
 
-            dgvBitacora.ReadOnly = true;
-            dgvBitacora.AllowUserToAddRows = false;
-            dgvBitacora.AllowUserToDeleteRows = false;
-            dgvBitacora.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvBitacora.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            TemaVisual.EstilizarGrid(dgvBitacora);
+            dgvBitacora.Dock = DockStyle.Fill;
+
+            // El encabezado se acopla arriba y la tabla al resto: la tabla, al
+            // ir acoplada a Fill, debe quedar al frente para que su
+            // acoplamiento se resuelva en último lugar y no tape la barra.
+            Panel encabezado = TemaVisual.CrearEncabezado(
+                "Bitácora / Auditoría",
+                TemaVisual.Glifos.Bitacora);
+            Controls.Add(encabezado);
+
+            flpFiltrosBitacora.SendToBack();
+            encabezado.SendToBack();
+            dgvBitacora.BringToFront();
 
             cboFiltroAccion.SelectedIndexChanged += FiltroCambiado;
             dtpFiltroFecha.ValueChanged += FiltroCambiado;
+
+            // Nota: el evento Load de este formulario ya está enlazado en
+            // FrmBitacora.Designer.cs. No debe volver a suscribirse aquí o la
+            // comprobación de administrador se ejecutaría dos veces.
         }
 
         private void FrmBitacora_Load(object sender, EventArgs e)
         {
             if (usuarioActual == null)
             {
+                MessageBox.Show(
+                    "Debe iniciar sesión para consultar la bitácora.",
+                    "Bitácora",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                Close();
                 return;
             }
 
@@ -63,16 +128,29 @@ namespace Hotel_Zormat
                 AutorizacionService.ExigirAdministrador(usuarioActual);
                 CargarBitacora();
             }
-            catch (Exception ex)
+            catch (PermisoDenegadoException)
             {
-                MessageBox.Show(ex.Message, "Bitácora", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(
+                    "Solo un administrador puede consultar la bitácora.",
+                    "Bitácora",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                Close();
+            }
+            catch (Exception)
+            {
+                MessageBox.Show(
+                    "No se pudo verificar el acceso a la bitácora.",
+                    "Bitácora",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
                 Close();
             }
         }
 
         private void FiltroCambiado(object sender, EventArgs e)
         {
-            if (usuarioActual == null || IsHandleCreated == false)
+            if (usuarioActual == null)
             {
                 return;
             }
@@ -100,9 +178,37 @@ namespace Hotel_Zormat
 
                 dgvBitacora.DataSource = bitacoraService.Filtrar(usuarioActual, accion, fecha);
             }
-            catch (Exception ex)
+            catch (PermisoDenegadoException)
             {
-                MessageBox.Show(ex.Message, "Bitácora", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(
+                    "Solo un administrador puede consultar la bitacora.",
+                    "Bitacora",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+            catch (FormatException)
+            {
+                MessageBox.Show(
+                    "Seleccione filtros válidos para consultar la bitácora.",
+                    "Bitácora",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+            catch (SqlException)
+            {
+                MessageBox.Show(
+                    "No se pudo consultar la bitácora en la base de datos.",
+                    "Bitácora",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+            catch (Exception)
+            {
+                MessageBox.Show(
+                    "Ocurrió un error al cargar la bitácora.",
+                    "Bitácora",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
             }
         }
     }

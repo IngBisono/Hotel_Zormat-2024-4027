@@ -42,11 +42,15 @@
             this.cboFiltroPiso = new System.Windows.Forms.ComboBox();
             this.cboFiltroEstado = new System.Windows.Forms.ComboBox();
             this.numCapacidad = new System.Windows.Forms.NumericUpDown();
+            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.flpHabitaciones.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvHabitaciones)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numPiso)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtTarifaBase)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numCapacidad)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
+            this.splitContainer1.SuspendLayout();
             this.SuspendLayout();
             // 
             // flpHabitaciones
@@ -64,6 +68,8 @@
             this.flpHabitaciones.Controls.Add(this.cboFiltroPiso);
             this.flpHabitaciones.Controls.Add(this.cboFiltroEstado);
             this.flpHabitaciones.Controls.Add(this.numCapacidad);
+            this.flpHabitaciones.Controls.Add(this.splitContainer1);
+            this.flpHabitaciones.Controls.Add(this.tableLayoutPanel1);
             this.flpHabitaciones.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flpHabitaciones.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.flpHabitaciones.Location = new System.Drawing.Point(0, 0);
@@ -175,6 +181,26 @@
             this.numCapacidad.Size = new System.Drawing.Size(120, 20);
             this.numCapacidad.TabIndex = 12;
             // 
+            // splitContainer1
+            // 
+            this.splitContainer1.Location = new System.Drawing.Point(249, 56);
+            this.splitContainer1.Name = "splitContainer1";
+            this.splitContainer1.Size = new System.Drawing.Size(150, 100);
+            this.splitContainer1.TabIndex = 13;
+            // 
+            // tableLayoutPanel1
+            // 
+            this.tableLayoutPanel1.ColumnCount = 2;
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(249, 162);
+            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+            this.tableLayoutPanel1.RowCount = 2;
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(200, 100);
+            this.tableLayoutPanel1.TabIndex = 14;
+            // 
             // FrmHabitaciones
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -189,6 +215,8 @@
             ((System.ComponentModel.ISupportInitialize)(this.numPiso)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtTarifaBase)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numCapacidad)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
+            this.splitContainer1.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -209,5 +237,7 @@
         private System.Windows.Forms.ComboBox cboFiltroPiso;
         private System.Windows.Forms.ComboBox cboFiltroEstado;
         private System.Windows.Forms.NumericUpDown numCapacidad;
+        private System.Windows.Forms.SplitContainer splitContainer1;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
     }
 }

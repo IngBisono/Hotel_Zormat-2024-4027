@@ -29,8 +29,8 @@
         private void InitializeComponent()
         {
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
-            this.lblTituloLogin = new System.Windows.Forms.Label();
             this.lblSubtituloLogin = new System.Windows.Forms.Label();
+            this.lblTituloLogin = new System.Windows.Forms.Label();
             this.flpAcceso = new System.Windows.Forms.FlowLayoutPanel();
             this.lblUsuarioPrompt = new System.Windows.Forms.Label();
             this.txtUsuario = new System.Windows.Forms.MaskedTextBox();
@@ -39,6 +39,7 @@
             this.chkMostrarContrasena = new System.Windows.Forms.CheckBox();
             this.btnIngresar = new System.Windows.Forms.Button();
             this.lblMensajeError = new System.Windows.Forms.Label();
+            this.pnlFranjaSuperior = new System.Windows.Forms.Panel();
             this.tableLayoutPanel1.SuspendLayout();
             this.flpAcceso.SuspendLayout();
             this.SuspendLayout();
@@ -48,8 +49,8 @@
             this.tableLayoutPanel1.ColumnCount = 2;
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel1.Controls.Add(this.lblTituloLogin, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.lblSubtituloLogin, 1, 0);
+            this.tableLayoutPanel1.Controls.Add(this.lblTituloLogin, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.flpAcceso, 1, 1);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
@@ -59,8 +60,17 @@
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(800, 450);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(504, 321);
             this.tableLayoutPanel1.TabIndex = 0;
+            // 
+            // lblSubtituloLogin
+            // 
+            this.lblSubtituloLogin.AutoSize = true;
+            this.lblSubtituloLogin.Location = new System.Drawing.Point(255, 0);
+            this.lblSubtituloLogin.Name = "lblSubtituloLogin";
+            this.lblSubtituloLogin.Size = new System.Drawing.Size(35, 13);
+            this.lblSubtituloLogin.TabIndex = 1;
+            this.lblSubtituloLogin.Text = "label1";
             // 
             // lblTituloLogin
             // 
@@ -70,15 +80,6 @@
             this.lblTituloLogin.Size = new System.Drawing.Size(92, 13);
             this.lblTituloLogin.TabIndex = 0;
             this.lblTituloLogin.Text = "HOTEL ZORMAT";
-            // 
-            // lblSubtituloLogin
-            // 
-            this.lblSubtituloLogin.AutoSize = true;
-            this.lblSubtituloLogin.Location = new System.Drawing.Point(403, 0);
-            this.lblSubtituloLogin.Name = "lblSubtituloLogin";
-            this.lblSubtituloLogin.Size = new System.Drawing.Size(35, 13);
-            this.lblSubtituloLogin.TabIndex = 1;
-            this.lblSubtituloLogin.Text = "label1";
             // 
             // flpAcceso
             // 
@@ -91,9 +92,9 @@
             this.flpAcceso.Controls.Add(this.lblMensajeError);
             this.flpAcceso.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flpAcceso.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
-            this.flpAcceso.Location = new System.Drawing.Point(403, 208);
+            this.flpAcceso.Location = new System.Drawing.Point(255, 143);
             this.flpAcceso.Name = "flpAcceso";
-            this.flpAcceso.Size = new System.Drawing.Size(394, 199);
+            this.flpAcceso.Size = new System.Drawing.Size(246, 134);
             this.flpAcceso.TabIndex = 2;
             // 
             // lblUsuarioPrompt
@@ -150,20 +151,32 @@
             // lblMensajeError
             // 
             this.lblMensajeError.AutoSize = true;
-            this.lblMensajeError.Location = new System.Drawing.Point(3, 130);
+            this.lblMensajeError.Location = new System.Drawing.Point(109, 0);
             this.lblMensajeError.Name = "lblMensajeError";
             this.lblMensajeError.Size = new System.Drawing.Size(35, 13);
             this.lblMensajeError.TabIndex = 6;
             this.lblMensajeError.Text = "label1";
             // 
+            // pnlFranjaSuperior
+            // 
+            this.pnlFranjaSuperior.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlFranjaSuperior.Location = new System.Drawing.Point(0, 0);
+            this.pnlFranjaSuperior.Name = "pnlFranjaSuperior";
+            this.pnlFranjaSuperior.Size = new System.Drawing.Size(504, 8);
+            this.pnlFranjaSuperior.TabIndex = 1;
+            // 
             // FrmLogin
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.ClientSize = new System.Drawing.Size(504, 321);
+            this.Controls.Add(this.pnlFranjaSuperior);
             this.Controls.Add(this.tableLayoutPanel1);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
             this.Name = "FrmLogin";
-            this.Text = "Form1";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.Text = "Hotel Zormat - Iniciar sesión";
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel1.PerformLayout();
             this.flpAcceso.ResumeLayout(false);
@@ -185,5 +198,6 @@
         private System.Windows.Forms.CheckBox chkMostrarContrasena;
         private System.Windows.Forms.Button btnIngresar;
         private System.Windows.Forms.Label lblMensajeError;
+        private System.Windows.Forms.Panel pnlFranjaSuperior;
     }
 }

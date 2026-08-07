@@ -1,7 +1,11 @@
+using Hotel_Zormat.Estilos;
 using HotelZormat.Modelo;
 using HotelZormat.Negocio;
+using HotelZormat.Negocio.Excepciones;
 using HotelZormat.Negocio.Reportes;
 using System;
+using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -26,61 +30,199 @@ namespace Hotel_Zormat
 
         private void ConfigurarPantalla()
         {
-            Text = "Reportes";
+            TemaVisual.PrepararFormulario(this, "Hotel Bisono - Reportes");
             StartPosition = FormStartPosition.CenterParent;
-            BackColor = Color.FromArgb(245, 248, 251);
+            Size = new Size(980, 660);
+            MinimumSize = new Size(860, 580);
 
-            flpReportes.Padding = new Padding(16);
             tabPage1.Text = "Ocupación del día";
             tabPage2.Text = "Ingresos";
 
             dtpFechaInicio.Value = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
             dtpFechaFin.Value = DateTime.Today;
+            TemaVisual.EstilizarFecha(dtpFechaInicio);
+            TemaVisual.EstilizarFecha(dtpFechaFin);
 
-            btnGenerarReporte.Text = "Generar reporte";
-            btnGenerarReporte.BackColor = Color.FromArgb(2, 88, 151);
-            btnGenerarReporte.ForeColor = Color.White;
-            btnGenerarReporte.FlatStyle = FlatStyle.Flat;
+            TemaVisual.EstilizarBoton(
+                btnGenerarReporte,
+                TemaVisual.Colores.AzulPrimario,
+                TemaVisual.Colores.Blanco,
+                TemaVisual.Colores.AzulHover);
+            TemaVisual.PonerGlifo(
+                btnGenerarReporte,
+                TemaVisual.Glifos.Reportes,
+                "Generar reporte");
 
-            dgvOcupacionDelDia.ReadOnly = true;
-            dgvOcupacionDelDia.AllowUserToAddRows = false;
-            dgvOcupacionDelDia.AllowUserToDeleteRows = false;
-            dgvOcupacionDelDia.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-
-            dgvIngresos.ReadOnly = true;
-            dgvIngresos.AllowUserToAddRows = false;
-            dgvIngresos.AllowUserToDeleteRows = false;
-            dgvIngresos.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            TemaVisual.EstilizarGrid(dgvOcupacionDelDia);
+            TemaVisual.EstilizarGrid(dgvIngresos);
 
             lblTotalIngresos.Text = "Total de ingresos: RD$ 0.00";
-            lblTotalIngresos.Font = new Font("Consolas", 12, FontStyle.Bold);
-            lblTotalIngresos.ForeColor = Color.FromArgb(2, 88, 151);
+            lblTotalIngresos.Font = TemaVisual.Fuentes.MontoTotal;
+            lblTotalIngresos.ForeColor = TemaVisual.Colores.AzulProfundo;
+            lblTotalIngresos.BackColor = TemaVisual.Colores.SolAmarillo;
+            lblTotalIngresos.AutoSize = false;
+            lblTotalIngresos.Size = new Size(340, 44);
+            lblTotalIngresos.TextAlign = ContentAlignment.MiddleCenter;
+            TemaVisual.AplicarEsquinasRedondeadas(lblTotalIngresos, 10);
+
+            ConfigurarDistribucion();
 
             Load += FrmReportes_Load;
             btnGenerarReporte.Click += btnGenerarReporte_Click;
         }
 
+        private void ConfigurarDistribucion()
+        {
+            Label lblFechaInicio = new Label();
+            lblFechaInicio.AutoSize = true;
+            lblFechaInicio.Text = "Desde:";
+            lblFechaInicio.Font = TemaVisual.Fuentes.Etiqueta;
+            lblFechaInicio.ForeColor = TemaVisual.Colores.Texto;
+            lblFechaInicio.Margin = new Padding(0, 10, 6, 0);
+
+            Label lblFechaFin = new Label();
+            lblFechaFin.AutoSize = true;
+            lblFechaFin.Text = "Hasta:";
+            lblFechaFin.Font = TemaVisual.Fuentes.Etiqueta;
+            lblFechaFin.ForeColor = TemaVisual.Colores.Texto;
+            lblFechaFin.Margin = new Padding(16, 10, 6, 0);
+
+            FlowLayoutPanel barraFiltros = new FlowLayoutPanel();
+            barraFiltros.AutoSize = true;
+            barraFiltros.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            barraFiltros.Dock = DockStyle.Fill;
+            barraFiltros.FlowDirection = FlowDirection.LeftToRight;
+            barraFiltros.BackColor = TemaVisual.Colores.FondoSecundario;
+            barraFiltros.Padding = new Padding(14, 10, 14, 10);
+            barraFiltros.WrapContents = true;
+
+            dtpFechaInicio.Width = 180;
+            dtpFechaFin.Width = 180;
+            dtpFechaInicio.Margin = new Padding(0, 6, 0, 0);
+            dtpFechaFin.Margin = new Padding(0, 6, 0, 0);
+            btnGenerarReporte.AutoSize = false;
+            btnGenerarReporte.Size = new Size(184, 36);
+            btnGenerarReporte.Margin = new Padding(20, 2, 0, 2);
+
+            barraFiltros.Controls.Add(lblFechaInicio);
+            barraFiltros.Controls.Add(dtpFechaInicio);
+            barraFiltros.Controls.Add(lblFechaFin);
+            barraFiltros.Controls.Add(dtpFechaFin);
+            barraFiltros.Controls.Add(btnGenerarReporte);
+
+            TableLayoutPanel contenidoIngresos = new TableLayoutPanel();
+            contenidoIngresos.ColumnCount = 1;
+            contenidoIngresos.ColumnStyles.Add(
+                new ColumnStyle(SizeType.Percent, 100F));
+            contenidoIngresos.Dock = DockStyle.Fill;
+            contenidoIngresos.BackColor = TemaVisual.Colores.Blanco;
+            contenidoIngresos.Padding = new Padding(14, 12, 14, 12);
+            contenidoIngresos.RowCount = 3;
+            contenidoIngresos.RowStyles.Add(
+                new RowStyle(SizeType.AutoSize));
+            contenidoIngresos.RowStyles.Add(
+                new RowStyle(SizeType.Percent, 100F));
+            contenidoIngresos.RowStyles.Add(
+                new RowStyle(SizeType.AutoSize));
+
+            dgvIngresos.Dock = DockStyle.Fill;
+            dgvIngresos.Margin = new Padding(0, 8, 0, 8);
+            lblTotalIngresos.Anchor = AnchorStyles.Right;
+            lblTotalIngresos.Margin = new Padding(0, 4, 0, 0);
+
+            contenidoIngresos.Controls.Add(barraFiltros, 0, 0);
+            contenidoIngresos.Controls.Add(dgvIngresos, 0, 1);
+            contenidoIngresos.Controls.Add(lblTotalIngresos, 0, 2);
+
+            tabPage1.Padding = new Padding(14);
+            tabPage2.Padding = new Padding(0);
+            tabPage1.BackColor = TemaVisual.Colores.Blanco;
+            tabPage2.BackColor = TemaVisual.Colores.Blanco;
+            tabPage2.Controls.Add(contenidoIngresos);
+
+            flpReportes.Visible = false;
+            Controls.Add(tabControl);
+            tabControl.Dock = DockStyle.Fill;
+            tabControl.Padding = new Point(0, 0);
+            TemaVisual.EstilizarTabControl(tabControl);
+
+            // El encabezado se acopla arriba; las pestañas, acopladas a Fill,
+            // deben quedar al frente para repartirse el espacio restante.
+            Panel encabezado = TemaVisual.CrearEncabezado(
+                "Reportes",
+                TemaVisual.Glifos.Reportes);
+            Controls.Add(encabezado);
+            tabControl.BringToFront();
+        }
+
         private void FrmReportes_Load(object sender, EventArgs e)
         {
+            if (UsuarioTieneAcceso() == false)
+            {
+                CerrarPorAccesoDenegado();
+                return;
+            }
+
             try
             {
-                if (usuarioActual != null)
-                {
-                    AutorizacionService.ExigirUsuarioActivo(usuarioActual);
-                }
+                AutorizacionService.ExigirUsuarioActivo(usuarioActual);
 
-                dgvOcupacionDelDia.DataSource = reporteService.ObtenerOcupacionDelDia();
+                List<OcupacionDia> ocupacion =
+                    reporteService.ObtenerOcupacionDelDia();
+
+                dgvOcupacionDelDia.DataSource = ocupacion;
+
+                if (ocupacion.Count == 0)
+                {
+                    MessageBox.Show(
+                        "No hay habitaciones ocupadas en este momento.",
+                        "Reportes",
+                        MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                }
             }
-            catch (Exception ex)
+            catch (PermisoDenegadoException)
             {
-                MessageBox.Show(ex.Message, "Reportes", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                CerrarPorAccesoDenegado();
+            }
+            catch (SqlException)
+            {
+                MessageBox.Show(
+                    "No se pudo cargar la ocupación desde la base de datos.",
+                    "Reportes",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+            catch (Exception)
+            {
+                MessageBox.Show(
+                    "Ocurrió un error al cargar el reporte de ocupación.",
+                    "Reportes",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
             }
         }
 
         private void btnGenerarReporte_Click(object sender, EventArgs e)
         {
+            if (UsuarioTieneAcceso() == false)
+            {
+                CerrarPorAccesoDenegado();
+                return;
+            }
+
+            btnGenerarReporte.Enabled = false;
+
             try
             {
+                AutorizacionService.ExigirUsuarioActivo(usuarioActual);
+
+                if (dtpFechaFin.Value.Date < dtpFechaInicio.Value.Date)
+                {
+                    throw new FormatException(
+                        "La fecha final no puede ser anterior a la fecha inicial.");
+                }
+
                 ReporteIngresos reporte = reporteService.ObtenerIngresosPorRango(
                     dtpFechaInicio.Value,
                     dtpFechaFin.Value);
@@ -90,13 +232,84 @@ namespace Hotel_Zormat
 
                 if (reporte.Facturas.Count == 0)
                 {
-                    MessageBox.Show("No hay facturas en el rango elegido.", "Reportes", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(
+                        "No hay facturas entre las fechas seleccionadas.",
+                        "Reportes",
+                        MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
                 }
             }
-            catch (Exception ex)
+            catch (PermisoDenegadoException)
             {
-                MessageBox.Show(ex.Message, "Reportes", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                CerrarPorAccesoDenegado();
             }
+            catch (FormatException error)
+            {
+                MessageBox.Show(
+                    error.Message,
+                    "Reportes",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+            catch (SqlException)
+            {
+                MessageBox.Show(
+                    "No se pudo consultar los ingresos en la base de datos.",
+                    "Reportes",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+            catch (Exception)
+            {
+                MessageBox.Show(
+                    "Ocurrió un error al generar el reporte de ingresos.",
+                    "Reportes",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+            finally
+            {
+                btnGenerarReporte.Enabled = true;
+            }
+        }
+
+        private bool UsuarioTieneAcceso()
+        {
+            if (usuarioActual == null)
+            {
+                return false;
+            }
+
+            if (usuarioActual.Activo == false)
+            {
+                return false;
+            }
+
+            if (usuarioActual.Rol == "Administrador")
+            {
+                return true;
+            }
+
+            if (usuarioActual.Rol == "Recepcionista")
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private void CerrarPorAccesoDenegado()
+        {
+            tabControl.Enabled = false;
+            btnGenerarReporte.Enabled = false;
+
+            MessageBox.Show(
+                "No tiene permiso para consultar los reportes.",
+                "Reportes",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+
+            Close();
         }
     }
 }

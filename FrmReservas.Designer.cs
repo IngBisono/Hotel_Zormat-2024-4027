@@ -39,6 +39,8 @@
             this.cboEstadoReserva = new System.Windows.Forms.ComboBox();
             this.btnGuardar = new System.Windows.Forms.Button();
             this.dgvReservasProximas = new System.Windows.Forms.DataGridView();
+            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.panel1 = new System.Windows.Forms.Panel();
             this.flpReservas.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvReservasProximas)).BeginInit();
             this.SuspendLayout();
@@ -56,6 +58,8 @@
             this.flpReservas.Controls.Add(this.cboEstadoReserva);
             this.flpReservas.Controls.Add(this.btnGuardar);
             this.flpReservas.Controls.Add(this.dgvReservasProximas);
+            this.flpReservas.Controls.Add(this.tableLayoutPanel1);
+            this.flpReservas.Controls.Add(this.panel1);
             this.flpReservas.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flpReservas.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.flpReservas.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
@@ -145,6 +149,26 @@
             this.dgvReservasProximas.Size = new System.Drawing.Size(240, 150);
             this.dgvReservasProximas.TabIndex = 9;
             // 
+            // tableLayoutPanel1
+            // 
+            this.tableLayoutPanel1.ColumnCount = 2;
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(249, 3);
+            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+            this.tableLayoutPanel1.RowCount = 2;
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(200, 100);
+            this.tableLayoutPanel1.TabIndex = 10;
+            // 
+            // panel1
+            // 
+            this.panel1.Location = new System.Drawing.Point(249, 109);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(200, 100);
+            this.panel1.TabIndex = 11;
+            // 
             // FrmReservas
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -173,5 +197,7 @@
         private System.Windows.Forms.ComboBox cboEstadoReserva;
         private System.Windows.Forms.Button btnGuardar;
         private System.Windows.Forms.DataGridView dgvReservasProximas;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
+        private System.Windows.Forms.Panel panel1;
     }
 }

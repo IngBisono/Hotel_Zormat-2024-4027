@@ -31,6 +31,7 @@
             this.dgvBitacora = new System.Windows.Forms.DataGridView();
             this.cboFiltroAccion = new System.Windows.Forms.ComboBox();
             this.dtpFiltroFecha = new System.Windows.Forms.DateTimePicker();
+            this.flpFiltrosBitacora = new System.Windows.Forms.FlowLayoutPanel();
             ((System.ComponentModel.ISupportInitialize)(this.dgvBitacora)).BeginInit();
             this.SuspendLayout();
             // 
@@ -60,11 +61,20 @@
             this.dtpFiltroFecha.Size = new System.Drawing.Size(200, 20);
             this.dtpFiltroFecha.TabIndex = 2;
             // 
+            // flpFiltrosBitacora
+            // 
+            this.flpFiltrosBitacora.Dock = System.Windows.Forms.DockStyle.Top;
+            this.flpFiltrosBitacora.Location = new System.Drawing.Point(0, 0);
+            this.flpFiltrosBitacora.Name = "flpFiltrosBitacora";
+            this.flpFiltrosBitacora.Size = new System.Drawing.Size(800, 60);
+            this.flpFiltrosBitacora.TabIndex = 3;
+            // 
             // FrmBitacora
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.flpFiltrosBitacora);
             this.Controls.Add(this.dtpFiltroFecha);
             this.Controls.Add(this.cboFiltroAccion);
             this.Controls.Add(this.dgvBitacora);
@@ -81,5 +91,6 @@
         private System.Windows.Forms.DataGridView dgvBitacora;
         private System.Windows.Forms.ComboBox cboFiltroAccion;
         private System.Windows.Forms.DateTimePicker dtpFiltroFecha;
+        private System.Windows.Forms.FlowLayoutPanel flpFiltrosBitacora;
     }
 }

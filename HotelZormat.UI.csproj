@@ -9,6 +9,7 @@
     <RootNamespace>Hotel_Zormat</RootNamespace>
     <AssemblyName>Hotel_Zormat</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <LangVersion>7.3</LangVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
@@ -46,6 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Estilos\TemaVisual.cs" />
     <Compile Include="FrmCheckInOut.cs">
       <SubType>Form</SubType>
     </Compile>

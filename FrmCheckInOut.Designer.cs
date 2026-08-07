@@ -34,6 +34,7 @@
             this.dgvEstadiasActivas = new System.Windows.Forms.DataGridView();
             this.btnCheckOut = new System.Windows.Forms.Button();
             this.lblEstadoHabitacionActual = new System.Windows.Forms.Label();
+            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.flpCheckInOut.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvReservasConfirmadas)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvEstadiasActivas)).BeginInit();
@@ -46,6 +47,7 @@
             this.flpCheckInOut.Controls.Add(this.dgvEstadiasActivas);
             this.flpCheckInOut.Controls.Add(this.btnCheckOut);
             this.flpCheckInOut.Controls.Add(this.lblEstadoHabitacionActual);
+            this.flpCheckInOut.Controls.Add(this.tableLayoutPanel1);
             this.flpCheckInOut.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flpCheckInOut.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.flpCheckInOut.Location = new System.Drawing.Point(0, 0);
@@ -96,6 +98,19 @@
             this.lblEstadoHabitacionActual.TabIndex = 4;
             this.lblEstadoHabitacionActual.Text = "label1";
             // 
+            // tableLayoutPanel1
+            // 
+            this.tableLayoutPanel1.ColumnCount = 2;
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(249, 3);
+            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+            this.tableLayoutPanel1.RowCount = 2;
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(200, 100);
+            this.tableLayoutPanel1.TabIndex = 5;
+            // 
             // FrmCheckInOut
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -120,5 +135,6 @@
         private System.Windows.Forms.DataGridView dgvEstadiasActivas;
         private System.Windows.Forms.Button btnCheckOut;
         private System.Windows.Forms.Label lblEstadoHabitacionActual;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
     }
 }

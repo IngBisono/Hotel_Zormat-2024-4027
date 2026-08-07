@@ -42,9 +42,16 @@
             this.btnNuevo = new System.Windows.Forms.Button();
             this.btnEliminar = new System.Windows.Forms.Button();
             this.dgvHistorialEstadias = new System.Windows.Forms.DataGridView();
+            this.tabControl1 = new System.Windows.Forms.TabControl();
+            this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.flpHuespedes.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvHuespedes)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvHistorialEstadias)).BeginInit();
+            this.tabControl1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
+            this.splitContainer1.SuspendLayout();
             this.SuspendLayout();
             // 
             // flpHuespedes
@@ -62,6 +69,8 @@
             this.flpHuespedes.Controls.Add(this.btnNuevo);
             this.flpHuespedes.Controls.Add(this.btnEliminar);
             this.flpHuespedes.Controls.Add(this.dgvHistorialEstadias);
+            this.flpHuespedes.Controls.Add(this.tabControl1);
+            this.flpHuespedes.Controls.Add(this.splitContainer1);
             this.flpHuespedes.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flpHuespedes.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.flpHuespedes.Location = new System.Drawing.Point(0, 0);
@@ -171,6 +180,43 @@
             this.dgvHistorialEstadias.Size = new System.Drawing.Size(240, 150);
             this.dgvHistorialEstadias.TabIndex = 12;
             // 
+            // tabControl1
+            // 
+            this.tabControl1.Controls.Add(this.tabPage1);
+            this.tabControl1.Controls.Add(this.tabPage2);
+            this.tabControl1.Location = new System.Drawing.Point(249, 188);
+            this.tabControl1.Name = "tabControl1";
+            this.tabControl1.SelectedIndex = 0;
+            this.tabControl1.Size = new System.Drawing.Size(200, 100);
+            this.tabControl1.TabIndex = 13;
+            // 
+            // tabPage1
+            // 
+            this.tabPage1.Location = new System.Drawing.Point(4, 22);
+            this.tabPage1.Name = "tabPage1";
+            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage1.Size = new System.Drawing.Size(192, 74);
+            this.tabPage1.TabIndex = 0;
+            this.tabPage1.Text = "tabPage1";
+            this.tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // tabPage2
+            // 
+            this.tabPage2.Location = new System.Drawing.Point(4, 22);
+            this.tabPage2.Name = "tabPage2";
+            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage2.Size = new System.Drawing.Size(192, 74);
+            this.tabPage2.TabIndex = 1;
+            this.tabPage2.Text = "tabPage2";
+            this.tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // splitContainer1
+            // 
+            this.splitContainer1.Location = new System.Drawing.Point(249, 294);
+            this.splitContainer1.Name = "splitContainer1";
+            this.splitContainer1.Size = new System.Drawing.Size(150, 100);
+            this.splitContainer1.TabIndex = 14;
+            // 
             // FrmHuespedes
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -183,6 +229,9 @@
             this.flpHuespedes.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvHuespedes)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvHistorialEstadias)).EndInit();
+            this.tabControl1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
+            this.splitContainer1.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -203,5 +252,9 @@
         private System.Windows.Forms.Button btnNuevo;
         private System.Windows.Forms.Button btnEliminar;
         private System.Windows.Forms.DataGridView dgvHistorialEstadias;
+        private System.Windows.Forms.TabControl tabControl1;
+        private System.Windows.Forms.TabPage tabPage1;
+        private System.Windows.Forms.TabPage tabPage2;
+        private System.Windows.Forms.SplitContainer splitContainer1;
     }
 }

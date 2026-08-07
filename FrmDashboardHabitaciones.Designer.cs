@@ -30,31 +30,28 @@
         {
             this.components = new System.ComponentModel.Container();
             this.pnlTablero = new System.Windows.Forms.FlowLayoutPanel();
-            this.menuPrincipal = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.cboFiltroPiso = new System.Windows.Forms.ComboBox();
             this.cboFiltroEstado = new System.Windows.Forms.ComboBox();
             this.btnActualizar = new System.Windows.Forms.Button();
             this.lblLeyenda = new System.Windows.Forms.Label();
+            this.menuPrincipal = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.pnlContenedorTablero = new System.Windows.Forms.Panel();
             this.pnlTablero.SuspendLayout();
             this.SuspendLayout();
             // 
             // pnlTablero
             // 
+            this.pnlTablero.AutoScroll = true;
             this.pnlTablero.Controls.Add(this.cboFiltroPiso);
             this.pnlTablero.Controls.Add(this.cboFiltroEstado);
             this.pnlTablero.Controls.Add(this.btnActualizar);
             this.pnlTablero.Controls.Add(this.lblLeyenda);
+            this.pnlTablero.Controls.Add(this.pnlContenedorTablero);
             this.pnlTablero.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlTablero.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.pnlTablero.Location = new System.Drawing.Point(0, 0);
             this.pnlTablero.Name = "pnlTablero";
             this.pnlTablero.Size = new System.Drawing.Size(800, 450);
             this.pnlTablero.TabIndex = 0;
-            // 
-            // menuPrincipal
-            // 
-            this.menuPrincipal.Name = "menuPrincipal";
-            this.menuPrincipal.Size = new System.Drawing.Size(61, 4);
             // 
             // cboFiltroPiso
             // 
@@ -67,14 +64,14 @@
             // cboFiltroEstado
             // 
             this.cboFiltroEstado.FormattingEnabled = true;
-            this.cboFiltroEstado.Location = new System.Drawing.Point(3, 30);
+            this.cboFiltroEstado.Location = new System.Drawing.Point(130, 3);
             this.cboFiltroEstado.Name = "cboFiltroEstado";
             this.cboFiltroEstado.Size = new System.Drawing.Size(121, 21);
             this.cboFiltroEstado.TabIndex = 1;
             // 
             // btnActualizar
             // 
-            this.btnActualizar.Location = new System.Drawing.Point(3, 57);
+            this.btnActualizar.Location = new System.Drawing.Point(257, 3);
             this.btnActualizar.Name = "btnActualizar";
             this.btnActualizar.Size = new System.Drawing.Size(75, 23);
             this.btnActualizar.TabIndex = 2;
@@ -84,11 +81,23 @@
             // lblLeyenda
             // 
             this.lblLeyenda.AutoSize = true;
-            this.lblLeyenda.Location = new System.Drawing.Point(3, 83);
+            this.lblLeyenda.Location = new System.Drawing.Point(338, 0);
             this.lblLeyenda.Name = "lblLeyenda";
             this.lblLeyenda.Size = new System.Drawing.Size(35, 13);
             this.lblLeyenda.TabIndex = 3;
             this.lblLeyenda.Text = "label1";
+            // 
+            // menuPrincipal
+            // 
+            this.menuPrincipal.Name = "menuPrincipal";
+            this.menuPrincipal.Size = new System.Drawing.Size(61, 4);
+            // 
+            // pnlContenedorTablero
+            // 
+            this.pnlContenedorTablero.Location = new System.Drawing.Point(379, 3);
+            this.pnlContenedorTablero.Name = "pnlContenedorTablero";
+            this.pnlContenedorTablero.Size = new System.Drawing.Size(200, 100);
+            this.pnlContenedorTablero.TabIndex = 4;
             // 
             // FrmDashboardHabitaciones
             // 
@@ -112,5 +121,6 @@
         private System.Windows.Forms.ComboBox cboFiltroEstado;
         private System.Windows.Forms.Button btnActualizar;
         private System.Windows.Forms.Label lblLeyenda;
+        private System.Windows.Forms.Panel pnlContenedorTablero;
     }
 }

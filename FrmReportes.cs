@@ -1,3 +1,4 @@
+// Cedula: 402-3047435-1
 using Hotel_Zormat.Estilos;
 using HotelZormat.Modelo;
 using HotelZormat.Negocio;
@@ -20,8 +21,7 @@ namespace Hotel_Zormat
         // reporte devuelve las habitaciones ocupadas, no el total del hotel.
         private readonly HabitacionService habitacionService;
 
-        // Servicios para los reportes nuevos. Ninguno agrega método nuevo:
-        // todos reutilizan lo que ya existe en HotelZormat.Negocio.
+        // Servicios para los reportes nuevos; reutilizan métodos ya existentes.
         private readonly ReservaService reservaService;
         private readonly EstadiaService estadiaService;
         private readonly HuespedService huespedService;
@@ -174,17 +174,9 @@ namespace Hotel_Zormat
             tabControl.Dock = DockStyle.Fill;
             tabControl.Padding = new Point(0, 0);
 
-            // TemaVisual.EstilizarTabControl(tabControl) se llama más
-            // adelante, desde ConfigurarPestanasPorRol() en FrmReportes_Load
-            // — no aquí. Su foreach final que fija BackColor/Font por
-            // página sólo corre una vez en el momento de la llamada, y en
-            // el constructor usuarioActual todavía es null (el segundo
-            // constructor lo asigna después de que éste termina), así que
-            // las pestañas nuevas por rol tienen que armarse en Load,
-            // cuando usuarioActual ya está disponible.
+            // TemaVisual.EstilizarTabControl se llama después, desde ConfigurarPestanasPorRol en Load.
 
-            // El encabezado se acopla arriba; las pestañas, acopladas a Fill,
-            // deben quedar al frente para repartirse el espacio restante.
+            // El encabezado se acopla arriba; las pestañas quedan al frente para llenar el resto.
             Panel encabezado = TemaVisual.CrearEncabezado(
                 "Reportes",
                 TemaVisual.Glifos.Reportes);
@@ -248,10 +240,7 @@ namespace Hotel_Zormat
             public string Detalle { get; set; }
         }
 
-        // Arma las pestañas que dependen del rol del usuario y carga los
-        // datos de las que no necesitan un rango de fechas explícito. Se
-        // llama desde FrmReportes_Load (no desde el constructor) porque
-        // usuarioActual todavía es null cuando corre ConfigurarDistribucion().
+        // Arma las pestañas según el rol del usuario y carga sus datos iniciales.
         private void ConfigurarPestanasPorRol()
         {
             bool esAdministrador = AutorizacionService.EsAdministrador(usuarioActual);
@@ -268,14 +257,11 @@ namespace Hotel_Zormat
             }
             else
             {
-                // Recepcionista no debe ni ver que "Ingresos" existe, no
-                // sólo tenerla deshabilitada.
+                // Recepcionista no debe ni ver que "Ingresos" existe.
                 tabControl.TabPages.Remove(tabPage2);
             }
 
-            // Debe llamarse una sola vez, ya con todas las pestañas puestas:
-            // su foreach final que fija BackColor/Font por página sólo
-            // corre en el momento de la llamada (ver TemaVisual.cs).
+            // Se llama una sola vez, ya con todas las pestañas agregadas.
             TemaVisual.EstilizarTabControl(tabControl);
 
             CargarDatosHabitaciones();
@@ -303,8 +289,7 @@ namespace Hotel_Zormat
             return contenedor;
         }
 
-        // Une un título de sección con una grilla ya configurada, en un
-        // panel de ancho fijo listo para apilarse en CrearContenedorPestana.
+        // Une un título de sección con una grilla, en un panel de ancho fijo.
         private static Panel CrearSeccionGrid(
             string titulo,
             string glifo,
@@ -333,8 +318,7 @@ namespace Hotel_Zormat
             return seccion;
         }
 
-        // Une un título de sección con una fila de tarjetas indicador
-        // (KPIs de un solo número), en un panel de ancho fijo.
+        // Une un título de sección con una fila de tarjetas indicador (KPIs).
         private static Panel CrearSeccionTarjetas(
             string titulo,
             string glifo,
@@ -383,8 +367,7 @@ namespace Hotel_Zormat
             return columna;
         }
 
-        // Crea una columna de fecha con el formato "07-ago-26" usado en el
-        // resto de la aplicación.
+        // Crea una columna de fecha con el formato "07-ago-26" usado en la app.
         private static DataGridViewTextBoxColumn CrearColumnaFecha(
             string propiedad,
             string encabezado,
@@ -419,11 +402,7 @@ namespace Hotel_Zormat
             return columna;
         }
 
-        // Variante de TemaVisual.CrearTarjetaIndicador para valores en
-        // pesos: la original usa una etiqueta de 132px pensada para números
-        // cortos ("42", "85%") y un monto tipo "RD$31,300.00" se recorta.
-        // No se modifica TemaVisual.cs porque esa tarjeta la usan otros
-        // formularios con valores cortos — esta es sólo para Financiero.
+        // Crea una tarjeta indicador más ancha, para montos en pesos que no caben en la original.
         private static Panel CrearTarjetaMonto(string rotulo, Color acento, out Label valor)
         {
             Panel tarjeta = new Panel();
@@ -473,8 +452,7 @@ namespace Hotel_Zormat
             return tarjeta;
         }
 
-        // Crea una grilla nueva ya estilizada, lista para recibir columnas
-        // explícitas (AutoGenerateColumns = false).
+        // Crea una grilla nueva ya estilizada, con columnas explícitas.
         private static DataGridView CrearGrid()
         {
             DataGridView grid = new DataGridView();
@@ -484,8 +462,7 @@ namespace Hotel_Zormat
             return grid;
         }
 
-        // Busca una fila por etiqueta en cualquiera de las listas de
-        // agrupación genéricas (evita repetir el mismo recorrido 5 veces).
+        // Busca una fila por etiqueta en una lista de conteo agrupado.
         private static FilaConteo BuscarConteo(List<FilaConteo> lista, string etiqueta)
         {
             foreach (FilaConteo fila in lista)
@@ -618,9 +595,7 @@ namespace Hotel_Zormat
                 MessageBoxIcon.Warning);
         }
 
-        // Resuelve "Nombre Apellido" a partir del documento del huésped,
-        // con respaldo si no existe o la consulta falla — mismo patrón
-        // defensivo ya usado en FrmCheckInOut.cs.
+        // Resuelve "Nombre Apellido" a partir del documento del huésped.
         private string ObtenerNombreHuesped(string numeroDocumento)
         {
             if (string.IsNullOrEmpty(numeroDocumento))
@@ -878,9 +853,7 @@ namespace Hotel_Zormat
             }
         }
 
-        // Reservas cuya fecha de entrada ya pasó y todavía no tienen
-        // estadía registrada (ni están canceladas) — mismo cruce que
-        // FrmCheckInOut.CargarReservasConfirmadas, con la fecha invertida.
+        // Reservas cuya fecha de entrada ya pasó y todavía no tienen estadía registrada.
         private List<FilaReservaResumen> ObtenerNoShows(
             List<Reserva> reservas, List<Estadia> estadias)
         {
@@ -925,8 +898,7 @@ namespace Hotel_Zormat
             return resultado;
         }
 
-        // Mismo cruce Estadia.IdReserva -> ReservaService.Buscar que ya usa
-        // FrmCheckInOut.dgvEstadiasActivas_DataBindingComplete.
+        // Resuelve la Reserva de cada Estadia activa para listar las próximas salidas.
         private List<FilaReservaResumen> ObtenerProximasSalidas(
             List<Estadia> activas)
         {
@@ -1318,9 +1290,7 @@ namespace Hotel_Zormat
             return resultado;
         }
 
-        // Cruce Factura.IdEstadia -> EstadiaService.Buscar -> Estadia.IdReserva
-        // -> ReservaService.Buscar, necesario porque Factura sólo guarda el
-        // IdEstadia, no la habitación ni la temporada.
+        // Resuelve la Reserva de una Factura, cruzando por su Estadia.
         private Reserva ObtenerReservaDeFactura(Factura factura)
         {
             try
@@ -1340,9 +1310,7 @@ namespace Hotel_Zormat
             }
         }
 
-        // Compara el total histórico estimado en las reservas contra el
-        // total histórico realmente facturado — deberían ser cercanos,
-        // salvo reservas sin check-in todavía o redondeos.
+        // Compara el total estimado en las reservas contra el total realmente facturado.
         private void CargarEstimadoVsFacturado()
         {
             try
@@ -1619,10 +1587,7 @@ namespace Hotel_Zormat
             }
             catch (PermisoDenegadoException)
             {
-                // Esta pestaña sólo se agrega para Administrador (ver
-                // ConfigurarPestanasPorRol), así que esto no debería pasar
-                // en uso normal; se deja la pestaña vacía en vez de tumbar
-                // el formulario completo si igual ocurriera.
+                // No debería pasar (esta pestaña es solo para Administrador); deja la pestaña vacía.
             }
             catch (SqlException)
             {

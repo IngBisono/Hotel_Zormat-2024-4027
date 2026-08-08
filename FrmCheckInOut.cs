@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Drawing;
+using System.Globalization;
 using System.Windows.Forms;
 
 namespace Hotel_Zormat
@@ -15,6 +16,7 @@ namespace Hotel_Zormat
         private readonly ReservaService _reservaService;
         private readonly EstadiaService _estadiaService;
         private readonly HabitacionService _habitacionService;
+        private readonly HuespedService _huespedService;
         private Usuario _usuarioActual;
 
         // Este constructor permite abrir el formulario en el Disenador.
@@ -24,6 +26,7 @@ namespace Hotel_Zormat
             _reservaService = new ReservaService();
             _estadiaService = new EstadiaService();
             _habitacionService = new HabitacionService();
+            _huespedService = new HuespedService();
             ConfigurarFormulario();
         }
 
@@ -75,6 +78,8 @@ namespace Hotel_Zormat
 
             ConfigurarGrid(dgvReservasConfirmadas);
             ConfigurarGrid(dgvEstadiasActivas);
+            ConfigurarColumnasCheckIn();
+            ConfigurarColumnasCheckOut();
             ConfigurarDistribucion();
 
             Load += FrmCheckInOut_Load;
@@ -84,6 +89,122 @@ namespace Hotel_Zormat
                 dgvReservasConfirmadas_CellClick;
             dgvEstadiasActivas.CellClick +=
                 dgvEstadiasActivas_CellClick;
+            dgvReservasConfirmadas.DataBindingComplete +=
+                dgvReservasConfirmadas_DataBindingComplete;
+            dgvEstadiasActivas.DataBindingComplete +=
+                dgvEstadiasActivas_DataBindingComplete;
+        }
+
+        // Reemplaza las columnas autogeneradas del grid de check-in por
+        // columnas explícitas, en el orden pedido, con encabezados en
+        // español. "Nombre" no es una propiedad de Reserva: se deja sin
+        // DataPropertyName y se llena a mano en
+        // dgvReservasConfirmadas_DataBindingComplete, una vez que el
+        // binding real ya ocurrió.
+        private void ConfigurarColumnasCheckIn()
+        {
+            dgvReservasConfirmadas.AutoGenerateColumns = false;
+            dgvReservasConfirmadas.Columns.Clear();
+
+            CultureInfo formatoFechas = new CultureInfo("es-DO");
+
+            dgvReservasConfirmadas.Columns.Add(CrearColumnaTexto(
+                "NumeroDocumentoHuesped", "ID", "colId", 13));
+            dgvReservasConfirmadas.Columns.Add(CrearColumnaNoEnlazada(
+                "colNombre", "Nombre", 22));
+            dgvReservasConfirmadas.Columns.Add(CrearColumnaTexto(
+                "NumeroHabitacion", "Habitacion", "colHabitacion", 9));
+            dgvReservasConfirmadas.Columns.Add(CrearColumnaFecha(
+                "FechaCheckIn", "Fecha Ingreso", "colFechaIngreso", 15,
+                formatoFechas));
+            dgvReservasConfirmadas.Columns.Add(CrearColumnaFecha(
+                "FechaCheckOut", "Fecha Salida", "colFechaSalida", 15,
+                formatoFechas));
+            dgvReservasConfirmadas.Columns.Add(CrearColumnaTexto(
+                "TotalNoches", "Noches", "colNoches", 8));
+
+            DataGridViewTextBoxColumn columnaMonto =
+                new DataGridViewTextBoxColumn();
+            columnaMonto.DataPropertyName = "MontoEstimado";
+            columnaMonto.HeaderText = "Monto";
+            columnaMonto.Name = "colMonto";
+            columnaMonto.FillWeight = 21;
+            columnaMonto.DefaultCellStyle.Format = "'RD$'#,##0.00";
+            columnaMonto.DefaultCellStyle.Alignment =
+                DataGridViewContentAlignment.MiddleRight;
+            dgvReservasConfirmadas.Columns.Add(columnaMonto);
+        }
+
+        // Reemplaza las columnas autogeneradas del grid de check-out.
+        // Estadia sólo aporta la fecha real (que además siempre sale null
+        // mientras la estadía sigue "Activa" — ver comentario en
+        // dgvEstadiasActivas_DataBindingComplete); ID, Nombre, Habitacion y
+        // Fecha Salida se resuelven vía la Reserva relacionada
+        // (Estadia.IdReserva) y se llenan a mano en el mismo handler.
+        private void ConfigurarColumnasCheckOut()
+        {
+            dgvEstadiasActivas.AutoGenerateColumns = false;
+            dgvEstadiasActivas.Columns.Clear();
+
+            dgvEstadiasActivas.Columns.Add(CrearColumnaNoEnlazada(
+                "colId", "ID", 18));
+            dgvEstadiasActivas.Columns.Add(CrearColumnaNoEnlazada(
+                "colNombre", "Nombre", 34));
+            dgvEstadiasActivas.Columns.Add(CrearColumnaNoEnlazada(
+                "colHabitacion", "Habitacion", 16));
+            dgvEstadiasActivas.Columns.Add(CrearColumnaNoEnlazada(
+                "colFechaSalida", "Fecha Salida", 22));
+        }
+
+        // Crea una columna de texto simple enlazada a una propiedad del
+        // modelo.
+        private static DataGridViewTextBoxColumn CrearColumnaTexto(
+            string propiedad,
+            string encabezado,
+            string nombreColumna,
+            int pesoRelativo)
+        {
+            DataGridViewTextBoxColumn columna = new DataGridViewTextBoxColumn();
+            columna.DataPropertyName = propiedad;
+            columna.HeaderText = encabezado;
+            columna.Name = nombreColumna;
+            columna.FillWeight = pesoRelativo;
+            return columna;
+        }
+
+        // Crea una columna de fecha con el formato "07-ago-26" usado en el
+        // resto de la aplicación.
+        private static DataGridViewTextBoxColumn CrearColumnaFecha(
+            string propiedad,
+            string encabezado,
+            string nombreColumna,
+            int pesoRelativo,
+            CultureInfo cultura)
+        {
+            DataGridViewTextBoxColumn columna = new DataGridViewTextBoxColumn();
+            columna.DataPropertyName = propiedad;
+            columna.HeaderText = encabezado;
+            columna.Name = nombreColumna;
+            columna.FillWeight = pesoRelativo;
+            columna.DefaultCellStyle.Format = "dd-MMM-yy";
+            columna.DefaultCellStyle.FormatProvider = cultura;
+            return columna;
+        }
+
+        // Crea una columna sin DataPropertyName: su valor se llena a mano
+        // en un handler DataBindingComplete, después de que el binding
+        // real ya ocurrió (Reserva/Estadia no traen nombre de huésped ni,
+        // en el caso de Estadia, número de habitación).
+        private static DataGridViewTextBoxColumn CrearColumnaNoEnlazada(
+            string nombreColumna,
+            string encabezado,
+            int pesoRelativo)
+        {
+            DataGridViewTextBoxColumn columna = new DataGridViewTextBoxColumn();
+            columna.HeaderText = encabezado;
+            columna.Name = nombreColumna;
+            columna.FillWeight = pesoRelativo;
+            return columna;
         }
 
         // Divide la pantalla en las secciones de entrada y salida.
@@ -120,14 +241,17 @@ namespace Hotel_Zormat
                 new RowStyle(SizeType.Percent, 50F));
 
             Panel seccionCheckIn = CrearSeccion(
-                "Check-in · Reservas confirmadas",
+                "Llegadas de hoy",
+                "Reservas pendientes de registrar entrada; al hacer " +
+                    "check-in se confirman y se emite la factura",
                 TemaVisual.Glifos.CheckIn,
                 dgvReservasConfirmadas,
                 btnCheckIn,
                 null);
 
             Panel seccionCheckOut = CrearSeccion(
-                "Check-out · Estadías activas",
+                "Salidas de hoy",
+                "Estadías activas; la factura ya se emitió al hacer check-in",
                 TemaVisual.Glifos.CheckOut,
                 dgvEstadiasActivas,
                 btnCheckOut,
@@ -138,9 +262,10 @@ namespace Hotel_Zormat
             flpCheckInOut.Visible = false;
         }
 
-        // Crea una seccion con titulo, tabla y boton de accion.
+        // Crea una seccion con titulo, subtitulo, tabla y boton de accion.
         private static Panel CrearSeccion(
             string titulo,
+            string subtitulo,
             string glifo,
             DataGridView tabla,
             Button boton,
@@ -156,6 +281,16 @@ namespace Hotel_Zormat
             encabezado.Dock = DockStyle.Top;
             encabezado.Height = 34;
             encabezado.BackColor = TemaVisual.Colores.Blanco;
+
+            Label apoyo = new Label();
+            apoyo.Text = subtitulo;
+            apoyo.Dock = DockStyle.Top;
+            apoyo.Height = 22;
+            apoyo.Font = TemaVisual.Fuentes.Pequena;
+            apoyo.ForeColor = TemaVisual.Colores.TextoSuave;
+            apoyo.BackColor = TemaVisual.Colores.Blanco;
+            apoyo.TextAlign = ContentAlignment.MiddleLeft;
+            apoyo.Padding = new Padding(2, 0, 0, 0);
 
             TableLayoutPanel barraAcciones = new TableLayoutPanel();
             barraAcciones.Dock = DockStyle.Bottom;
@@ -177,17 +312,23 @@ namespace Hotel_Zormat
             if (etiquetaEstado != null)
             {
                 etiquetaEstado.AutoSize = false;
-                etiquetaEstado.Dock = DockStyle.Fill;
-                etiquetaEstado.TextAlign = ContentAlignment.MiddleLeft;
-                etiquetaEstado.Margin = new Padding(0, 10, 0, 6);
+                etiquetaEstado.Anchor = AnchorStyles.Left;
+                etiquetaEstado.Size = new Size(280, 30);
+                etiquetaEstado.TextAlign = ContentAlignment.MiddleCenter;
+                etiquetaEstado.Margin = new Padding(0, 14, 0, 6);
+                etiquetaEstado.Font = TemaVisual.Fuentes.CuerpoNegrita;
                 etiquetaEstado.BackColor = TemaVisual.Colores.Blanco;
+                etiquetaEstado.ForeColor = TemaVisual.Colores.TextoSuave;
+                TemaVisual.AplicarEsquinasRedondeadas(etiquetaEstado, 14);
                 barraAcciones.Controls.Add(etiquetaEstado, 1, 0);
             }
 
             tabla.Dock = DockStyle.Fill;
 
-            // La tabla queda al frente para que su acoplamiento a Fill se
-            // resuelva en último lugar y no invada el encabezado ni la barra.
+            // El orden de inserción define el reparto: el subtítulo se agrega
+            // antes que el encabezado para quedar justo debajo de él, y la
+            // tabla pasa al frente para que su Fill se resuelva al final.
+            seccion.Controls.Add(apoyo);
             seccion.Controls.Add(encabezado);
             seccion.Controls.Add(barraAcciones);
             seccion.Controls.Add(tabla);
@@ -226,11 +367,12 @@ namespace Hotel_Zormat
             }
         }
 
-        // Registra la entrada de la reserva seleccionada.
+        // Registra la entrada de la reserva seleccionada y factura de
+        // inmediato (el huesped paga al hacer check-in, no al check-out).
         private void btnCheckIn_Click(object sender, EventArgs e)
         {
             btnCheckIn.Enabled = false;
-            bool checkInRegistrado = false;
+            Factura factura = null;
 
             try
             {
@@ -250,10 +392,10 @@ namespace Hotel_Zormat
                     return;
                 }
 
-                if (reserva.Estado != "Confirmada")
+                if (reserva.Estado == "Cancelada")
                 {
                     MostrarAdvertencia(
-                        "Solo una reserva confirmada permite hacer check-in.");
+                        "No se puede hacer check-in a una reserva cancelada.");
                     return;
                 }
 
@@ -264,17 +406,9 @@ namespace Hotel_Zormat
                     return;
                 }
 
-                _estadiaService.RegistrarCheckIn(
+                factura = _estadiaService.RegistrarCheckIn(
                     reserva.IdReserva,
                     _usuarioActual);
-
-                checkInRegistrado = true;
-
-                MessageBox.Show(
-                    "El check-in fue registrado correctamente.",
-                    "Hotel Bisono",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
             }
             catch (HabitacionOcupadaException ex)
             {
@@ -303,13 +437,13 @@ namespace Hotel_Zormat
             }
             finally
             {
-                if (checkInRegistrado == false)
+                if (factura == null)
                 {
                     ActualizarEstadoBotones();
                 }
             }
 
-            if (checkInRegistrado == false)
+            if (factura == null)
             {
                 return;
             }
@@ -338,13 +472,19 @@ namespace Hotel_Zormat
             {
                 MostrarProblemaRecarga("check-in");
             }
+
+            using (FrmFactura formularioFactura = new FrmFactura(factura))
+            {
+                formularioFactura.ShowDialog(this);
+            }
         }
 
-        // Registra la salida y abre el recibo generado.
+        // Registra la salida y libera la habitacion. Ya no emite factura:
+        // el pago se hizo al hacer check-in.
         private void btnCheckOut_Click(object sender, EventArgs e)
         {
             btnCheckOut.Enabled = false;
-            Factura factura = null;
+            Estadia estadiaCerrada = null;
 
             try
             {
@@ -364,9 +504,15 @@ namespace Hotel_Zormat
                     return;
                 }
 
-                factura = _estadiaService.RegistrarCheckOut(
+                estadiaCerrada = _estadiaService.RegistrarCheckOut(
                     estadia.IdEstadia,
                     _usuarioActual);
+
+                MessageBox.Show(
+                    "El check-out fue registrado correctamente.",
+                    "Hotel Bisono",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
             }
             catch (HabitacionOcupadaException ex)
             {
@@ -395,13 +541,13 @@ namespace Hotel_Zormat
             }
             finally
             {
-                if (factura == null)
+                if (estadiaCerrada == null)
                 {
                     ActualizarEstadoBotones();
                 }
             }
 
-            if (factura == null)
+            if (estadiaCerrada == null)
             {
                 return;
             }
@@ -429,11 +575,6 @@ namespace Hotel_Zormat
             catch (Exception)
             {
                 MostrarProblemaRecarga("check-out");
-            }
-
-            using (FrmFactura formularioFactura = new FrmFactura(factura))
-            {
-                formularioFactura.ShowDialog(this);
             }
         }
 
@@ -513,6 +654,101 @@ namespace Hotel_Zormat
             }
         }
 
+        // Llena la columna "Nombre" del grid de check-in después de cada
+        // binding (Reserva no trae el nombre del huésped, sólo su
+        // documento).
+        private void dgvReservasConfirmadas_DataBindingComplete(
+            object sender,
+            DataGridViewBindingCompleteEventArgs e)
+        {
+            foreach (DataGridViewRow fila in dgvReservasConfirmadas.Rows)
+            {
+                Reserva reserva = fila.DataBoundItem as Reserva;
+
+                if (reserva == null)
+                {
+                    continue;
+                }
+
+                fila.Cells["colNombre"].Value =
+                    ObtenerNombreCompletoHuesped(reserva.NumeroDocumentoHuesped);
+            }
+        }
+
+        // Llena ID, Nombre, Habitacion y Fecha Salida del grid de
+        // check-out, resolviendo la Reserva relacionada a cada Estadia por
+        // su IdReserva. "Fecha Salida" muestra Reserva.FechaCheckOut (la
+        // fecha planeada), no Estadia.FechaSalidaReal: esa última siempre
+        // sale null mientras la estadía sigue "Activa" (RegistrarCheckOut
+        // exige que sea null para poder ejecutarse), así que bindearla
+        // directo dejaría la columna vacía en todas las filas de este grid.
+        private void dgvEstadiasActivas_DataBindingComplete(
+            object sender,
+            DataGridViewBindingCompleteEventArgs e)
+        {
+            foreach (DataGridViewRow fila in dgvEstadiasActivas.Rows)
+            {
+                Estadia estadia = fila.DataBoundItem as Estadia;
+
+                if (estadia == null)
+                {
+                    continue;
+                }
+
+                Reserva reserva = null;
+
+                try
+                {
+                    reserva = _reservaService.Buscar(estadia.IdReserva);
+                }
+                catch (SqlException)
+                {
+                }
+
+                if (reserva == null)
+                {
+                    fila.Cells["colId"].Value = "—";
+                    fila.Cells["colNombre"].Value = "—";
+                    fila.Cells["colHabitacion"].Value = "—";
+                    fila.Cells["colFechaSalida"].Value = "—";
+                    continue;
+                }
+
+                fila.Cells["colId"].Value = reserva.NumeroDocumentoHuesped;
+                fila.Cells["colNombre"].Value =
+                    ObtenerNombreCompletoHuesped(reserva.NumeroDocumentoHuesped);
+                fila.Cells["colHabitacion"].Value = reserva.NumeroHabitacion;
+                fila.Cells["colFechaSalida"].Value =
+                    reserva.FechaCheckOut.ToString(
+                        "dd-MMM-yy", new CultureInfo("es-DO"));
+            }
+        }
+
+        // Resuelve "Nombre Apellido" a partir del documento del huésped,
+        // con respaldo si el huésped no existe o la consulta falla — mismo
+        // patrón defensivo que CargarReservaSeleccionada en
+        // FrmReservas.cs.
+        private string ObtenerNombreCompletoHuesped(string numeroDocumento)
+        {
+            if (string.IsNullOrEmpty(numeroDocumento))
+            {
+                return "—";
+            }
+
+            try
+            {
+                Huesped huesped =
+                    _huespedService.BuscarPorDocumento(numeroDocumento);
+                return huesped != null
+                    ? huesped.Nombre + " " + huesped.Apellido
+                    : numeroDocumento;
+            }
+            catch (SqlException)
+            {
+                return numeroDocumento;
+            }
+        }
+
         // Carga ambas tablas y limpia el texto de estado.
         private void CargarDatos()
         {
@@ -532,7 +768,12 @@ namespace Hotel_Zormat
 
             foreach (Reserva reserva in reservas)
             {
-                if (reserva.Estado != "Confirmada")
+                // El check-in es la confirmacion definitiva de la reserva
+                // (ver EstadiaService.RegistrarCheckIn): una reserva
+                // "Pendiente" o ya "Confirmada" puede llegar hasta aqui,
+                // sin necesitar un paso manual aparte en Reservaciones.
+                // Solo se descarta una reserva "Cancelada".
+                if (reserva.Estado == "Cancelada")
                 {
                     continue;
                 }
@@ -600,7 +841,10 @@ namespace Hotel_Zormat
 
             if (_usuarioActual != null && reserva != null)
             {
-                if (reserva.Estado == "Confirmada" &&
+                // El check-in confirma la reserva (ver
+                // EstadiaService.RegistrarCheckIn): solo se bloquea una
+                // reserva ya "Cancelada".
+                if (reserva.Estado != "Cancelada" &&
                     reserva.FechaCheckIn.Date <= DateTime.Today)
                 {
                     puedeHacerCheckIn = true;
@@ -625,12 +869,22 @@ namespace Hotel_Zormat
                 {
                     lblEstadoHabitacionActual.Text =
                         "La habitacion no fue encontrada.";
+                    lblEstadoHabitacionActual.BackColor =
+                        TemaVisual.Colores.Blanco;
+                    lblEstadoHabitacionActual.ForeColor =
+                        TemaVisual.Colores.TextoSuave;
                     return;
                 }
 
                 lblEstadoHabitacionActual.Text =
                     "Habitacion " + habitacion.Numero +
                     " - Estado: " + habitacion.Estado;
+
+                // El distintivo toma el color semántico del estado real.
+                lblEstadoHabitacionActual.BackColor =
+                    TemaVisual.Colores.PorEstadoSuave(habitacion.Estado);
+                lblEstadoHabitacionActual.ForeColor =
+                    TemaVisual.Colores.PorEstado(habitacion.Estado);
             }
             catch (PermisoDenegadoException ex)
             {

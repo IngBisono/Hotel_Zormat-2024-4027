@@ -3,6 +3,7 @@ using HotelZormat.Modelo;
 using HotelZormat.Negocio;
 using HotelZormat.Negocio.Excepciones;
 using System;
+using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Drawing;
 using System.Windows.Forms;
@@ -13,6 +14,10 @@ namespace Hotel_Zormat
     {
         private readonly BitacoraService bitacoraService;
         private Usuario usuarioActual;
+
+        // Conteo de registros del filtro activo. Creado por código para no
+        // modificar FrmBitacora.Designer.cs.
+        private Label _lblConteoEventos;
 
         public FrmBitacora()
         {
@@ -67,6 +72,16 @@ namespace Hotel_Zormat
             flpFiltrosBitacora.Controls.Add(etiquetaFecha);
             flpFiltrosBitacora.Controls.Add(dtpFiltroFecha);
             flpFiltrosBitacora.Controls.Add(distintivoAdmin);
+
+            _lblConteoEventos = new Label();
+            _lblConteoEventos.Text = "0 registros";
+            _lblConteoEventos.Font = TemaVisual.Fuentes.CuerpoNegrita;
+            _lblConteoEventos.ForeColor = TemaVisual.Colores.AzulMarino;
+            _lblConteoEventos.AutoSize = false;
+            _lblConteoEventos.Size = new Size(140, 28);
+            _lblConteoEventos.Margin = new Padding(18, 4, 0, 0);
+            _lblConteoEventos.TextAlign = ContentAlignment.MiddleLeft;
+            flpFiltrosBitacora.Controls.Add(_lblConteoEventos);
 
             cboFiltroAccion.Width = 170;
             cboFiltroAccion.Margin = new Padding(0, 4, 12, 0);
@@ -176,7 +191,18 @@ namespace Hotel_Zormat
                     fecha = dtpFiltroFecha.Value.Date;
                 }
 
-                dgvBitacora.DataSource = bitacoraService.Filtrar(usuarioActual, accion, fecha);
+                List<Bitacora> registros =
+                    bitacoraService.Filtrar(usuarioActual, accion, fecha);
+
+                dgvBitacora.DataSource = registros;
+
+                if (_lblConteoEventos != null)
+                {
+                    int total = registros == null ? 0 : registros.Count;
+                    _lblConteoEventos.Text = total == 1
+                        ? "1 registro"
+                        : total + " registros";
+                }
             }
             catch (PermisoDenegadoException)
             {

@@ -28,6 +28,10 @@ namespace Hotel_Zormat
         private Button btnNavBitacora;
         private Button btnNavCerrarSesion;
 
+        // Leyenda con el conteo de habitaciones por estado. Tampoco procede
+        // del diseñador: se arma por código junto a la barra de filtros.
+        private FlowLayoutPanel flpLeyendaEstados;
+
         public bool CerrarSesionSolicitado { get; private set; }
 
         public FrmDashboardHabitaciones()
@@ -89,9 +93,6 @@ namespace Hotel_Zormat
                 "Actualizar");
 
             lblLeyenda.Text =
-                "Disponible: verde   ·   Ocupada: rojo   ·   " +
-                "Reservada: naranja   ·   Limpieza: azul" +
-                Environment.NewLine +
                 "Use el menú lateral o haga clic derecho sobre el tablero.";
             lblLeyenda.Font = TemaVisual.Fuentes.Pequena;
             lblLeyenda.ForeColor = TemaVisual.Colores.TextoSuave;
@@ -149,7 +150,7 @@ namespace Hotel_Zormat
                 "Huéspedes",
                 TemaVisual.Glifos.Huesped);
             btnNavReservas = TemaVisual.CrearBotonNavegacion(
-                "Reservas",
+                "Reservaciones",
                 TemaVisual.Glifos.Reserva);
             btnNavCheckInOut = TemaVisual.CrearBotonNavegacion(
                 "Check-in / Check-out",
@@ -314,6 +315,17 @@ namespace Hotel_Zormat
             barraFiltros.Controls.Add(etiquetaEstado);
             barraFiltros.Controls.Add(cboFiltroEstado);
             barraFiltros.Controls.Add(btnActualizar);
+
+            // La leyenda pasa a ser una fila de distintivos con el conteo por
+            // estado; se rellena en ActualizarLeyenda con los datos reales.
+            flpLeyendaEstados = new FlowLayoutPanel();
+            flpLeyendaEstados.AutoSize = true;
+            flpLeyendaEstados.FlowDirection = FlowDirection.LeftToRight;
+            flpLeyendaEstados.WrapContents = false;
+            flpLeyendaEstados.Margin = new Padding(0, 3, 0, 0);
+            flpLeyendaEstados.BackColor = Color.Transparent;
+            barraFiltros.SetFlowBreak(btnActualizar, true);
+            barraFiltros.Controls.Add(flpLeyendaEstados);
             barraFiltros.Controls.Add(lblLeyenda);
 
             cboFiltroPiso.Width = 120;
@@ -321,10 +333,11 @@ namespace Hotel_Zormat
             cboFiltroPiso.Margin = new Padding(0, 4, 0, 0);
             cboFiltroEstado.Margin = new Padding(0, 4, 0, 0);
             btnActualizar.Margin = new Padding(20, 0, 24, 0);
-            lblLeyenda.Margin = new Padding(0, 2, 0, 0);
+            lblLeyenda.Margin = new Padding(4, 7, 0, 0);
 
             Panel encabezado = TemaVisual.CrearEncabezado(
                 "Estado de Habitaciones",
+                "Vista en tiempo real del inventario de habitaciones",
                 TemaVisual.Glifos.Habitacion);
             encabezado.Dock = DockStyle.Fill;
 
@@ -333,7 +346,7 @@ namespace Hotel_Zormat
             contenido.ColumnStyles.Add(
                 new ColumnStyle(SizeType.Percent, 100F));
             contenido.RowCount = 3;
-            contenido.RowStyles.Add(new RowStyle(SizeType.Absolute, 62F));
+            contenido.RowStyles.Add(new RowStyle(SizeType.Absolute, 82F));
             contenido.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             contenido.RowStyles.Add(
                 new RowStyle(SizeType.Percent, 100F));
@@ -359,56 +372,46 @@ namespace Hotel_Zormat
         // ------------------------------------------------------------------
         // Eventos de la barra lateral
         //
-        // Quedan deliberadamente vacíos: la navegación real sigue viviendo en
-        // el menú contextual, que no se ha tocado. Cada nota indica el método
-        // ya existente cuya lógica corresponde replicar aquí.
+        // Cada botón delega en el método Abrir*/CerrarSesion ya usado por el
+        // menú contextual (ConfigurarMenu), en vez de duplicar su lógica.
+        // Así el sidebar y el menú contextual quedan permanentemente
+        // sincronizados: cualquier ajuste futuro a esos métodos beneficia a
+        // ambos puntos de entrada por igual.
         // ------------------------------------------------------------------
 
         private void BtnNavHabitaciones_Click(object sender, EventArgs e)
         {
-            // TODO: replicar la lógica de AbrirHabitaciones(sender, e) en este
-            // mismo archivo: abre FrmHabitaciones con ShowDialog(this) y llama
-            // a ActualizarDashboard() al cerrarse.
+            AbrirHabitaciones(sender, e);
         }
 
         private void BtnNavHuespedes_Click(object sender, EventArgs e)
         {
-            // TODO: replicar la lógica de AbrirHuespedes(sender, e) en este
-            // mismo archivo: abre FrmHuespedes con ShowDialog(this).
+            AbrirHuespedes(sender, e);
         }
 
         private void BtnNavReservas_Click(object sender, EventArgs e)
         {
-            // TODO: replicar la lógica de AbrirReservas(sender, e) en este
-            // mismo archivo: abre FrmReservas con ShowDialog(this) y llama a
-            // ActualizarDashboard() al cerrarse.
+            AbrirReservas(sender, e);
         }
 
         private void BtnNavCheckInOut_Click(object sender, EventArgs e)
         {
-            // TODO: replicar la lógica de AbrirCheckInOut(sender, e) en este
-            // mismo archivo: abre FrmCheckInOut con ShowDialog(this) y llama a
-            // ActualizarDashboard() al cerrarse.
+            AbrirCheckInOut(sender, e);
         }
 
         private void BtnNavReportes_Click(object sender, EventArgs e)
         {
-            // TODO: replicar la lógica de AbrirReportes(sender, e) en este
-            // mismo archivo: abre FrmReportes con ShowDialog(this).
+            AbrirReportes(sender, e);
         }
 
         private void BtnNavBitacora_Click(object sender, EventArgs e)
         {
-            // TODO: replicar la lógica de AbrirBitacora(sender, e) en este
-            // mismo archivo: abre FrmBitacora con ShowDialog(this). El botón
-            // sólo se crea si el usuario es administrador.
+            AbrirBitacora(sender, e);
         }
 
         private void BtnNavCerrarSesion_Click(object sender, EventArgs e)
         {
-            // TODO: replicar la lógica de CerrarSesion(sender, e) en este
-            // mismo archivo: marca CerrarSesionSolicitado y cierra el
-            // formulario para que Program.cs vuelva al inicio de sesión.
+            CerrarSesion(sender, e);
         }
 
         private void FrmDashboardHabitaciones_Load(
@@ -445,7 +448,7 @@ namespace Hotel_Zormat
                 null,
                 AbrirHuespedes);
             menuPrincipal.Items.Add(
-                "Reservas",
+                "Reservaciones",
                 null,
                 AbrirReservas);
             menuPrincipal.Items.Add(
@@ -503,6 +506,7 @@ namespace Hotel_Zormat
                     _habitacionService.ObtenerTodas();
 
                 CargarPisos(habitaciones);
+                ActualizarLeyenda(habitaciones);
                 MostrarHabitacionesFiltradas();
             }
             catch (SqlException)
@@ -516,6 +520,63 @@ namespace Hotel_Zormat
                 MostrarMensaje(
                     "Ocurrió un error al cargar las habitaciones.");
             }
+        }
+
+        // Rellena la leyenda con un distintivo por estado y su conteo. Los
+        // conteos son sobre el inventario completo, no sobre el filtro
+        // aplicado, para que la leyenda siga siendo una referencia estable.
+        private void ActualizarLeyenda(List<Habitacion> habitaciones)
+        {
+            if (flpLeyendaEstados == null)
+            {
+                return;
+            }
+
+            string[] estados = new string[]
+            {
+                "Disponible",
+                "Ocupada",
+                "Reservada",
+                "Limpieza"
+            };
+
+            flpLeyendaEstados.SuspendLayout();
+
+            while (flpLeyendaEstados.Controls.Count > 0)
+            {
+                Control anterior = flpLeyendaEstados.Controls[0];
+                flpLeyendaEstados.Controls.Remove(anterior);
+                anterior.Dispose();
+            }
+
+            foreach (string estado in estados)
+            {
+                int cantidad = 0;
+
+                if (habitaciones != null)
+                {
+                    foreach (Habitacion habitacion in habitaciones)
+                    {
+                        if (string.Equals(
+                                habitacion.Estado,
+                                estado,
+                                StringComparison.OrdinalIgnoreCase))
+                        {
+                            cantidad = cantidad + 1;
+                        }
+                    }
+                }
+
+                Label distintivo = TemaVisual.CrearDistintivo(
+                    estado + " (" + cantidad + ")",
+                    TemaVisual.Colores.PorEstadoSuave(estado),
+                    TemaVisual.Colores.PorEstado(estado));
+                distintivo.Size = new Size(126, 26);
+                distintivo.Margin = new Padding(0, 0, 8, 0);
+                flpLeyendaEstados.Controls.Add(distintivo);
+            }
+
+            flpLeyendaEstados.ResumeLayout();
         }
 
         private void CargarPisos(List<Habitacion> habitaciones)

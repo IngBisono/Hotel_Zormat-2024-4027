@@ -5,16 +5,47 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Drawing;
+using System.Globalization;
 using System.Windows.Forms;
 
 namespace Hotel_Zormat
 {
+    // Pantalla de gestión de reservas: lista todas las reservas (con filtro
+    // por estado), permite actualizar y eliminar la seleccionada, y abre
+    // FrmNuevaReserva para dar de alta una reserva nueva. La creación ya no
+    // vive aquí — este formulario nunca llama a ReservaService.Crear.
     public partial class FrmReservas : Form
     {
         private readonly ReservaService _reservaService;
         private readonly HuespedService _huespedService;
         private readonly HabitacionService _habitacionService;
         private Usuario _usuarioActual;
+
+        // Reserva actualmente cargada en el panel de edición. Null cuando
+        // no hay ninguna fila seleccionada.
+        private int? _idReservaSeleccionada;
+
+        // Huésped de la reserva seleccionada (o el que el usuario acaba de
+        // elegir en FrmBuscarHuesped mientras edita).
+        private Huesped _huespedEditado;
+
+        // Evita que limpiar la selección del grid dispare en cascada el
+        // manejador de selección. Mismo patrón que FrmHabitaciones.cs.
+        private bool _limpiandoFormulario;
+
+        // Controles creados por código: no existen en el diseñador.
+        private TextBox _txtHuesped;
+        private Button _btnBuscarHuesped;
+        private Button _btnNuevaReserva;
+        private Button _btnEliminar;
+        private ComboBox _cboFiltroEstado;
+        private TextBox _txtBuscarHuesped;
+
+        // Líneas adicionales del resumen. Se crean por código para no tocar
+        // FrmReservas.Designer.cs.
+        private Label _lblTarifaNoche;
+        private Label _lblFactorTemporada;
+        private Label _lblNotaImpuestos;
 
         // Este constructor permite abrir el formulario en el Disenador.
         public FrmReservas()
@@ -33,7 +64,7 @@ namespace Hotel_Zormat
 
             if (_usuarioActual != null)
             {
-                Text = "Hotel Bisono - Reservas - " +
+                Text = "Hotel Bisono - Reservaciones - " +
                     _usuarioActual.NombreCompleto;
             }
         }
@@ -41,9 +72,12 @@ namespace Hotel_Zormat
         // Prepara los textos, colores y eventos del formulario.
         private void ConfigurarFormulario()
         {
-            TemaVisual.PrepararFormulario(this, "Hotel Bisono - Reservas");
+            TemaVisual.PrepararFormulario(this, "Hotel Bisono - Reservaciones");
 
-            ConfigurarCombo(cboHuesped);
+            // El huésped ya no se elige en un combo: se ve en un texto de
+            // solo lectura y se busca con un diálogo aparte.
+            cboHuesped.Visible = false;
+
             ConfigurarCombo(cboHabitacion);
             ConfigurarCombo(cboTemporada);
             ConfigurarCombo(cboEstadoReserva);
@@ -52,30 +86,22 @@ namespace Hotel_Zormat
             cboTemporada.Items.Add("Alta");
             cboTemporada.Items.Add("Media");
             cboTemporada.Items.Add("Baja");
-            cboTemporada.SelectedIndex = 0;
 
             cboEstadoReserva.Items.Clear();
             cboEstadoReserva.Items.Add("Pendiente");
             cboEstadoReserva.Items.Add("Confirmada");
             cboEstadoReserva.Items.Add("Cancelada");
-            cboEstadoReserva.SelectedIndex = 1;
 
             dtpCheckIn.Format = DateTimePickerFormat.Short;
             dtpCheckOut.Format = DateTimePickerFormat.Short;
-            dtpCheckIn.Value = DateTime.Today;
-            dtpCheckOut.Value = DateTime.Today.AddDays(1);
             TemaVisual.EstilizarFecha(dtpCheckIn);
             TemaVisual.EstilizarFecha(dtpCheckOut);
 
-            lblNochesCalculadas.Text = "Noches: 1";
-            lblMontoCalculado.Text = "Monto estimado: RD$0.00";
-            lblNochesCalculadas.Font = TemaVisual.Fuentes.CuerpoNegrita;
-            lblMontoCalculado.Font = TemaVisual.Fuentes.MontoTotal;
-            lblNochesCalculadas.ForeColor = TemaVisual.Colores.AzulMarino;
-            lblMontoCalculado.ForeColor = TemaVisual.Colores.AzulProfundo;
-            lblNochesCalculadas.BackColor = Color.Transparent;
-            lblMontoCalculado.BackColor = Color.Transparent;
+            lblNochesCalculadas.Text = "Noches: 0";
+            lblMontoCalculado.Text = "RD$0.00";
 
+            // "Actualizar", no "Guardar": este botón ya sólo edita una
+            // reserva existente, la creación se hace desde FrmNuevaReserva.
             TemaVisual.EstilizarBoton(
                 btnGuardar,
                 TemaVisual.Colores.AzulPrimario,
@@ -83,72 +109,226 @@ namespace Hotel_Zormat
                 TemaVisual.Colores.AzulHover);
             TemaVisual.PonerGlifo(
                 btnGuardar,
-                TemaVisual.Glifos.Guardar,
-                "Guardar reserva");
+                TemaVisual.Glifos.Actualizar,
+                "Actualizar");
 
-            ConfigurarGrid(dgvReservasProximas);
+            _btnEliminar = new Button();
+            TemaVisual.EstilizarBoton(
+                _btnEliminar,
+                TemaVisual.Colores.Rojo,
+                TemaVisual.Colores.Blanco,
+                Color.FromArgb(180, 56, 48));
+            TemaVisual.PonerGlifo(
+                _btnEliminar,
+                TemaVisual.Glifos.Eliminar,
+                "Eliminar");
+
+            _btnNuevaReserva = new Button();
+            TemaVisual.EstilizarBoton(
+                _btnNuevaReserva,
+                TemaVisual.Colores.TurquesaProfundo,
+                TemaVisual.Colores.Blanco,
+                TemaVisual.Colores.TurquesaPalmera);
+            TemaVisual.PonerGlifo(
+                _btnNuevaReserva,
+                TemaVisual.Glifos.Nuevo,
+                "Nueva reserva");
+
+            _txtHuesped = new TextBox();
+            _txtHuesped.ReadOnly = true;
+            _txtHuesped.BackColor = TemaVisual.Colores.FondoSecundario;
+
+            // ReadOnly sólo bloquea la edición, no el foco: sin esto, el
+            // cursor puede quedar parpadeando en el campo como si se
+            // pudiera escribir ahí (por Tab o por clic directo). TabStop lo
+            // saca del ciclo de Tab; GotFocus cubre el clic directo,
+            // redirigiendo al botón "Buscar", la única forma real de
+            // completar este campo.
+            _txtHuesped.TabStop = false;
+            _txtHuesped.GotFocus += delegate { _btnBuscarHuesped.Focus(); };
+
+            _btnBuscarHuesped = new Button();
+            TemaVisual.EstilizarBoton(
+                _btnBuscarHuesped,
+                TemaVisual.Colores.TurquesaProfundo,
+                TemaVisual.Colores.Blanco,
+                TemaVisual.Colores.TurquesaPalmera);
+            TemaVisual.PonerGlifo(
+                _btnBuscarHuesped,
+                TemaVisual.Glifos.Buscar,
+                "Buscar");
+
+            _cboFiltroEstado = new ComboBox();
+            ConfigurarCombo(_cboFiltroEstado);
+            _cboFiltroEstado.Items.Clear();
+            _cboFiltroEstado.Items.Add("Todas");
+            _cboFiltroEstado.Items.Add("Pendiente");
+            _cboFiltroEstado.Items.Add("Confirmada");
+            _cboFiltroEstado.Items.Add("Cancelada");
+            _cboFiltroEstado.SelectedIndex = 0;
+
+            // Caja de búsqueda por huésped (nombre o documento), ubicada en
+            // la barra superior a la derecha del filtro de Estado. Se
+            // dispara sólo con Enter (ver txtBuscarHuesped_KeyDown), no con
+            // cada tecla, porque HuespedService.Buscar consulta la BD.
+            _txtBuscarHuesped = new TextBox();
+
+            TemaVisual.EstilizarGrid(dgvReservasProximas);
+            dgvReservasProximas.MultiSelect = false;
+            dgvReservasProximas.SelectionMode =
+                DataGridViewSelectionMode.FullRowSelect;
+            ConfigurarColumnasReservas();
+
             ConfigurarDistribucion();
 
             Load += FrmReservas_Load;
-            btnGuardar.Click += btnGuardar_Click;
+            btnGuardar.Click += btnActualizar_Click;
+            _btnEliminar.Click += btnEliminar_Click;
+            _btnNuevaReserva.Click += btnNuevaReserva_Click;
+            _btnBuscarHuesped.Click += btnBuscarHuesped_Click;
+            _cboFiltroEstado.SelectedIndexChanged += filtroEstado_SelectedIndexChanged;
+            _txtBuscarHuesped.KeyDown += txtBuscarHuesped_KeyDown;
+            dgvReservasProximas.SelectionChanged +=
+                dgvReservasProximas_SelectionChanged;
             dtpCheckIn.ValueChanged += DatosReserva_Changed;
             dtpCheckOut.ValueChanged += DatosReserva_Changed;
             cboHabitacion.SelectedIndexChanged += DatosReserva_Changed;
             cboTemporada.SelectedIndexChanged += DatosReserva_Changed;
         }
 
-        // Organiza los campos en dos columnas y deja crecer la tabla.
+        // Organiza la tabla a la izquierda y el panel de edición a la
+        // derecha, con una barra superior para filtrar y crear reservas.
         private void ConfigurarDistribucion()
         {
-            Size = new Size(840, 720);
-            MinimumSize = new Size(800, 640);
+            Size = new Size(1200, 760);
+            MinimumSize = new Size(1040, 680);
 
-            Controls.Add(tableLayoutPanel1);
-            tableLayoutPanel1.Dock = DockStyle.Fill;
-            tableLayoutPanel1.Padding = new Padding(22, 18, 22, 18);
-            tableLayoutPanel1.BackColor = TemaVisual.Colores.FondoClaro;
+            // El SplitContainer se crea por código (no está en el
+            // Designer), así que nace con el tamaño diminuto por defecto de
+            // un control nuevo. Hay que emparentarlo (Controls.Add) primero
+            // para que el Dock.Fill le dé su ancho real; recién entonces se
+            // puede fijar SplitterDistance/Panel1MinSize/Panel2MinSize sin
+            // que WinForms los rechace por no caber en ese ancho todavía.
+            SplitContainer split = new SplitContainer();
+            split.Dock = DockStyle.Fill;
+            split.Orientation = Orientation.Vertical;
+            split.SplitterWidth = 6;
+            split.BackColor = TemaVisual.Colores.FondoClaro;
 
-            // El encabezado se acopla arriba y la tabla al resto: el control
-            // acoplado a Fill debe quedar al frente porque el acoplamiento se
-            // resuelve del último control al primero.
             Panel encabezado = TemaVisual.CrearEncabezado(
-                "Nueva Reserva",
+                "Reservaciones",
+                "Cree, actualice o elimine reservas",
                 TemaVisual.Glifos.Reserva);
+            Controls.Add(split);
             Controls.Add(encabezado);
-            tableLayoutPanel1.BringToFront();
+            split.BringToFront();
 
+            split.Panel1MinSize = 420;
+            split.Panel2MinSize = 380;
+            // 680 -> 720: la caja de búsqueda de huésped y las 8 columnas
+            // explícitas de la grilla (antes 9 autogeneradas) necesitan un
+            // poco más de aire; Panel2 (ficha de edición, min 380) sigue
+            // sobrando con este ancho en un formulario de 1200px.
+            split.SplitterDistance = 720;
+            split.Panel1.Padding = new Padding(16, 12, 8, 16);
+            split.Panel2.Padding = new Padding(8, 12, 16, 16);
+            split.Panel1.BackColor = TemaVisual.Colores.FondoClaro;
+            split.Panel2.BackColor = TemaVisual.Colores.FondoClaro;
+
+            // --- Panel izquierdo: barra superior + tabla ---
+            FlowLayoutPanel barraSuperior = new FlowLayoutPanel();
+            barraSuperior.Parent = split.Panel1;
+            barraSuperior.Dock = DockStyle.Top;
+            barraSuperior.Height = 58;
+            barraSuperior.FlowDirection = FlowDirection.LeftToRight;
+            barraSuperior.WrapContents = false;
+            barraSuperior.Padding = new Padding(0, 10, 0, 10);
+            barraSuperior.BackColor = TemaVisual.Colores.FondoClaro;
+
+            _btnNuevaReserva.Size = new Size(160, 36);
+            _btnNuevaReserva.Margin = new Padding(0, 0, 24, 0);
+
+            Label lblFiltro = CrearEtiqueta("Estado:");
+            lblFiltro.Margin = new Padding(0, 10, 4, 0);
+
+            _cboFiltroEstado.Width = 140;
+            _cboFiltroEstado.Margin = new Padding(0, 6, 0, 0);
+
+            barraSuperior.Controls.Add(_btnNuevaReserva);
+            barraSuperior.Controls.Add(lblFiltro);
+            barraSuperior.Controls.Add(_cboFiltroEstado);
+
+            // Caja de búsqueda por huésped, directamente a la derecha del
+            // filtro de Estado (mismo FlowLayoutPanel, mismo orden de
+            // Controls.Add — WrapContents=false la mantiene en la fila).
+            Label lblBuscarHuesped = CrearEtiqueta("Huésped:");
+            lblBuscarHuesped.Margin = new Padding(16, 10, 4, 0);
+
+            Panel marcoBuscarHuesped = TemaVisual.EnvolverCampo(
+                _txtBuscarHuesped,
+                TemaVisual.Colores.FondoClaro);
+            marcoBuscarHuesped.Size = new Size(200, 36);
+            marcoBuscarHuesped.Margin = new Padding(0, 6, 0, 0);
+            TemaVisual.AnteponerGlifo(
+                marcoBuscarHuesped,
+                _txtBuscarHuesped,
+                TemaVisual.Glifos.Buscar);
+
+            barraSuperior.Controls.Add(lblBuscarHuesped);
+            barraSuperior.Controls.Add(marcoBuscarHuesped);
+
+            dgvReservasProximas.Parent = split.Panel1;
+            dgvReservasProximas.Dock = DockStyle.Fill;
+            dgvReservasProximas.Margin = new Padding(0);
+            barraSuperior.SendToBack();
+            dgvReservasProximas.BringToFront();
+
+            // --- Panel derecho: ficha de edición ---
+            tableLayoutPanel1.Parent = split.Panel2;
             tableLayoutPanel1.Controls.Clear();
             tableLayoutPanel1.ColumnStyles.Clear();
             tableLayoutPanel1.RowStyles.Clear();
+            tableLayoutPanel1.Dock = DockStyle.Fill;
+            tableLayoutPanel1.Padding = new Padding(20, 16, 20, 16);
+            tableLayoutPanel1.BackColor = TemaVisual.Colores.Blanco;
             tableLayoutPanel1.ColumnCount = 2;
-            tableLayoutPanel1.RowCount = 10;
+            tableLayoutPanel1.RowCount = 9;
+            tableLayoutPanel1.GrowStyle = TableLayoutPanelGrowStyle.FixedSize;
             tableLayoutPanel1.ColumnStyles.Add(
-                new ColumnStyle(SizeType.Absolute, 150F));
+                new ColumnStyle(SizeType.Absolute, 140F));
             tableLayoutPanel1.ColumnStyles.Add(
                 new ColumnStyle(SizeType.Percent, 100F));
 
-            for (int fila = 0; fila < 9; fila++)
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 36F));
+
+            for (int fila = 0; fila < 6; fila++)
             {
                 tableLayoutPanel1.RowStyles.Add(
-                    new RowStyle(SizeType.AutoSize));
+                    new RowStyle(SizeType.Absolute, 48F));
             }
 
-            tableLayoutPanel1.RowStyles.Add(
-                new RowStyle(SizeType.Percent, 100F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 190F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
-            AgregarCampo("Huésped", cboHuesped, 0);
-            AgregarCampo("Habitación", cboHabitacion, 1);
-            AgregarCampo("Fecha de entrada", dtpCheckIn, 2);
-            AgregarCampo("Fecha de salida", dtpCheckOut, 3);
-            AgregarCampo("Temporada", cboTemporada, 4);
-            AgregarCampo("Estado", cboEstadoReserva, 5);
+            Label tituloFicha = TemaVisual.CrearTituloSeccion(
+                "Detalle de la reserva",
+                TemaVisual.Glifos.Reserva);
+            tituloFicha.Dock = DockStyle.Fill;
+            tituloFicha.BackColor = TemaVisual.Colores.Blanco;
+            tableLayoutPanel1.Controls.Add(tituloFicha, 0, 0);
+            tableLayoutPanel1.SetColumnSpan(tituloFicha, 2);
 
-            // Tarjeta de resumen con el degradado cálido del atardecer.
+            AgregarCampoHuesped(1);
+            AgregarCampo("Habitación", cboHabitacion, 2);
+            AgregarCampo("Fecha de entrada", dtpCheckIn, 3);
+            AgregarCampo("Fecha de salida", dtpCheckOut, 4);
+            AgregarCampo("Temporada", cboTemporada, 5);
+            AgregarCampo("Estado", cboEstadoReserva, 6);
+
             panel1.Controls.Clear();
             panel1.Dock = DockStyle.Fill;
-            panel1.Height = 88;
-            panel1.Margin = new Padding(6, 10, 6, 10);
-            panel1.Padding = new Padding(18, 12, 18, 12);
+            panel1.Margin = new Padding(0, 6, 0, 6);
+            panel1.Padding = new Padding(0);
             panel1.BorderStyle = BorderStyle.None;
             panel1.BackColor = TemaVisual.Colores.FondoClaro;
             panel1.Paint += delegate (object remitente, PaintEventArgs e)
@@ -164,85 +344,243 @@ namespace Hotel_Zormat
             panel1.Resize += delegate { panel1.Invalidate(); };
             TemaVisual.AplicarEsquinasRedondeadas(panel1, 12);
 
-            lblNochesCalculadas.AutoSize = false;
-            lblNochesCalculadas.Dock = DockStyle.Top;
-            lblNochesCalculadas.Height = 22;
-            lblNochesCalculadas.TextAlign = ContentAlignment.MiddleLeft;
-
-            lblMontoCalculado.AutoSize = false;
-            lblMontoCalculado.Dock = DockStyle.Fill;
-            lblMontoCalculado.TextAlign = ContentAlignment.MiddleLeft;
-
-            panel1.Controls.Add(lblMontoCalculado);
-            panel1.Controls.Add(lblNochesCalculadas);
-            tableLayoutPanel1.Controls.Add(panel1, 0, 6);
+            ConstruirResumen();
+            tableLayoutPanel1.Controls.Add(panel1, 0, 7);
             tableLayoutPanel1.SetColumnSpan(panel1, 2);
 
+            FlowLayoutPanel barraBotones = new FlowLayoutPanel();
+            barraBotones.Dock = DockStyle.Fill;
+            barraBotones.FlowDirection = FlowDirection.LeftToRight;
+            barraBotones.WrapContents = true;
+            barraBotones.BackColor = TemaVisual.Colores.Blanco;
+            barraBotones.Padding = new Padding(0, 12, 0, 0);
+
             btnGuardar.AutoSize = false;
-            btnGuardar.Size = new Size(190, 38);
-            btnGuardar.Anchor = AnchorStyles.Left;
-            btnGuardar.Margin = new Padding(6, 6, 6, 10);
-            tableLayoutPanel1.Controls.Add(btnGuardar, 1, 7);
+            btnGuardar.Size = new Size(130, 36);
+            btnGuardar.Margin = new Padding(0, 3, 8, 3);
+            _btnEliminar.AutoSize = false;
+            _btnEliminar.Size = new Size(130, 36);
+            _btnEliminar.Margin = new Padding(0, 3, 0, 3);
 
-            Label tituloTabla = TemaVisual.CrearTituloSeccion(
-                "Reservas próximas",
-                TemaVisual.Glifos.Reserva);
-            tituloTabla.AutoSize = false;
-            tituloTabla.Dock = DockStyle.Fill;
-            tituloTabla.Margin = new Padding(6, 10, 6, 4);
-            tableLayoutPanel1.Controls.Add(tituloTabla, 0, 8);
-            tableLayoutPanel1.SetColumnSpan(tituloTabla, 2);
+            barraBotones.Controls.Add(btnGuardar);
+            barraBotones.Controls.Add(_btnEliminar);
 
-            dgvReservasProximas.Dock = DockStyle.Fill;
-            dgvReservasProximas.Margin = new Padding(6);
-            tableLayoutPanel1.Controls.Add(dgvReservasProximas, 0, 9);
-            tableLayoutPanel1.SetColumnSpan(dgvReservasProximas, 2);
+            tableLayoutPanel1.Controls.Add(barraBotones, 0, 8);
+            tableLayoutPanel1.SetColumnSpan(barraBotones, 2);
 
             flpReservas.Visible = false;
         }
 
-        // Agrega una etiqueta y su campo en una fila de la tabla.
-        private void AgregarCampo(
-            string texto,
-            Control campo,
-            int fila)
+        // Reemplaza las columnas autogeneradas —que exponían IdReserva y
+        // encabezados literales de las propiedades del modelo ("Numero...")—
+        // por columnas explícitas, en el orden pedido, con encabezados en
+        // español y el mismo formato de fecha ("07-ago-26") y monto
+        // ("RD$3,500.00") que usa el resto de la aplicación. Se llama una
+        // única vez desde ConfigurarFormulario(), antes de la primera
+        // asignación de DataSource: con AutoGenerateColumns = false, cada
+        // refresco posterior de CargarReservas() sólo revincula filas, sin
+        // recrear ni duplicar columnas.
+        private void ConfigurarColumnasReservas()
         {
-            Label etiqueta = new Label();
-            etiqueta.Text = texto;
-            etiqueta.AutoSize = true;
-            etiqueta.Anchor = AnchorStyles.Left;
-            etiqueta.Margin = new Padding(6, 12, 6, 6);
-            etiqueta.Font = TemaVisual.Fuentes.Etiqueta;
-            etiqueta.ForeColor = TemaVisual.Colores.Texto;
+            dgvReservasProximas.AutoGenerateColumns = false;
+            dgvReservasProximas.Columns.Clear();
 
+            // Cultura fija para que "MMM" salga en español ("ago") sin
+            // depender de la configuración regional de la máquina donde
+            // corra la app (el proyecto no fija CultureInfo.CurrentCulture
+            // en ningún lado).
+            CultureInfo formatoFechas = new CultureInfo("es-DO");
+
+            // Pesos ajustados a mano tras ver la grilla renderizada: "15-sept"
+            // (setiembre se abrevia con 4 letras en español, no 3 como
+            // "ago") y montos de varias cifras ("RD$22,000.00") necesitaban
+            // más espacio relativo que "Documento" o "Noches".
+            dgvReservasProximas.Columns.Add(CrearColumnaTexto(
+                "NumeroDocumentoHuesped", "Documento", 15));
+            dgvReservasProximas.Columns.Add(CrearColumnaTexto(
+                "NumeroHabitacion", "Habitación", 8));
+            dgvReservasProximas.Columns.Add(CrearColumnaFecha(
+                "FechaCheckIn", "Check-in", 14, formatoFechas));
+            dgvReservasProximas.Columns.Add(CrearColumnaFecha(
+                "FechaCheckOut", "Check-out", 14, formatoFechas));
+            dgvReservasProximas.Columns.Add(CrearColumnaTexto(
+                "Temporada", "Temporada", 10));
+            dgvReservasProximas.Columns.Add(CrearColumnaTexto(
+                "Estado", "Estado", 11));
+            dgvReservasProximas.Columns.Add(CrearColumnaTexto(
+                "TotalNoches", "Noches", 7));
+
+            DataGridViewTextBoxColumn columnaMonto =
+                new DataGridViewTextBoxColumn();
+            columnaMonto.DataPropertyName = "MontoEstimado";
+            columnaMonto.HeaderText = "Monto";
+            columnaMonto.Name = "colMontoEstimado";
+            columnaMonto.FillWeight = 21;
+            columnaMonto.DefaultCellStyle.Format = "'RD$'#,##0.00";
+            columnaMonto.DefaultCellStyle.Alignment =
+                DataGridViewContentAlignment.MiddleRight;
+            dgvReservasProximas.Columns.Add(columnaMonto);
+        }
+
+        // Crea una columna de texto simple para dgvReservasProximas.
+        private static DataGridViewTextBoxColumn CrearColumnaTexto(
+            string propiedad,
+            string encabezado,
+            int pesoRelativo)
+        {
+            DataGridViewTextBoxColumn columna = new DataGridViewTextBoxColumn();
+            columna.DataPropertyName = propiedad;
+            columna.HeaderText = encabezado;
+            columna.Name = "col" + propiedad;
+            columna.FillWeight = pesoRelativo;
+            return columna;
+        }
+
+        // Crea una columna de fecha con el formato "07-ago-26" usado en el
+        // resto de la aplicación.
+        private static DataGridViewTextBoxColumn CrearColumnaFecha(
+            string propiedad,
+            string encabezado,
+            int pesoRelativo,
+            CultureInfo cultura)
+        {
+            DataGridViewTextBoxColumn columna = new DataGridViewTextBoxColumn();
+            columna.DataPropertyName = propiedad;
+            columna.HeaderText = encabezado;
+            columna.Name = "col" + propiedad;
+            columna.FillWeight = pesoRelativo;
+            columna.DefaultCellStyle.Format = "dd-MMM-yy";
+            columna.DefaultCellStyle.FormatProvider = cultura;
+            return columna;
+        }
+
+        // Agrega el campo de huésped: texto de solo lectura + botón buscar.
+        private void AgregarCampoHuesped(int fila)
+        {
+            Label etiqueta = CrearEtiqueta("Huésped");
+            tableLayoutPanel1.Controls.Add(etiqueta, 0, fila);
+
+            Panel contenedor = new Panel();
+            contenedor.Dock = DockStyle.Fill;
+            contenedor.Margin = new Padding(3, 6, 3, 6);
+
+            Panel marco = TemaVisual.EnvolverCampo(
+                _txtHuesped,
+                TemaVisual.Colores.Blanco);
+            marco.Dock = DockStyle.Fill;
+            marco.Margin = new Padding(0);
+
+            _btnBuscarHuesped.AutoSize = false;
+            _btnBuscarHuesped.Size = new Size(90, 30);
+            _btnBuscarHuesped.Dock = DockStyle.Right;
+            _btnBuscarHuesped.Margin = new Padding(0);
+
+            contenedor.Controls.Add(marco);
+            contenedor.Controls.Add(_btnBuscarHuesped);
+            marco.BringToFront();
+
+            tableLayoutPanel1.Controls.Add(contenedor, 1, fila);
+        }
+
+        // Arma la tarjeta de resumen. Misma fórmula y misma nota que
+        // siempre: ITBIS y propina se aplican al facturar, no aquí.
+        private void ConstruirResumen()
+        {
+            panel1.Controls.Add(lblNochesCalculadas);
+            panel1.Controls.Add(lblMontoCalculado);
+
+            Label titulo = new Label();
+            titulo.Text = "Resumen de la reserva";
+            titulo.Font = TemaVisual.Fuentes.TituloSeccion;
+            titulo.ForeColor = TemaVisual.Colores.AzulProfundo;
+            titulo.BackColor = Color.Transparent;
+            titulo.AutoSize = false;
+            titulo.Size = new Size(340, 24);
+            titulo.Location = new Point(16, 10);
+            titulo.TextAlign = ContentAlignment.MiddleLeft;
+
+            lblNochesCalculadas.Dock = DockStyle.None;
+            lblNochesCalculadas.AutoSize = false;
+            lblNochesCalculadas.BackColor = Color.Transparent;
+            lblNochesCalculadas.ForeColor = TemaVisual.Colores.AzulProfundo;
+            lblNochesCalculadas.Font = TemaVisual.Fuentes.Cuerpo;
+            lblNochesCalculadas.Size = new Size(340, 20);
+            lblNochesCalculadas.Location = new Point(16, 40);
+            lblNochesCalculadas.TextAlign = ContentAlignment.MiddleLeft;
+
+            _lblTarifaNoche = CrearLineaResumen(new Point(16, 60));
+            _lblFactorTemporada = CrearLineaResumen(new Point(16, 80));
+
+            lblMontoCalculado.Dock = DockStyle.None;
+            lblMontoCalculado.AutoSize = false;
+            lblMontoCalculado.BackColor = Color.Transparent;
+            lblMontoCalculado.ForeColor = TemaVisual.Colores.AzulProfundo;
+            lblMontoCalculado.Font = TemaVisual.Fuentes.MontoTotal;
+            lblMontoCalculado.Size = new Size(340, 36);
+            lblMontoCalculado.Location = new Point(16, 108);
+            lblMontoCalculado.TextAlign = ContentAlignment.MiddleLeft;
+
+            _lblNotaImpuestos = new Label();
+            _lblNotaImpuestos.Text =
+                "El ITBIS (18%) y la propina (10%) se aplican al facturar, " +
+                "no sobre este estimado.";
+            _lblNotaImpuestos.Font = TemaVisual.Fuentes.Pequena;
+            _lblNotaImpuestos.ForeColor = TemaVisual.Colores.AzulMarino;
+            _lblNotaImpuestos.BackColor = Color.Transparent;
+            _lblNotaImpuestos.AutoSize = false;
+            _lblNotaImpuestos.Size = new Size(340, 44);
+            _lblNotaImpuestos.Location = new Point(16, 148);
+            _lblNotaImpuestos.TextAlign = ContentAlignment.TopLeft;
+
+            panel1.Controls.Add(titulo);
+            panel1.Controls.Add(_lblTarifaNoche);
+            panel1.Controls.Add(_lblFactorTemporada);
+            panel1.Controls.Add(_lblNotaImpuestos);
+        }
+
+        private static Label CrearLineaResumen(Point ubicacion)
+        {
+            Label linea = new Label();
+            linea.Font = TemaVisual.Fuentes.Cuerpo;
+            linea.ForeColor = TemaVisual.Colores.AzulProfundo;
+            linea.BackColor = Color.Transparent;
+            linea.AutoSize = false;
+            linea.Size = new Size(340, 20);
+            linea.Location = ubicacion;
+            linea.TextAlign = ContentAlignment.MiddleLeft;
+            return linea;
+        }
+
+        // Agrega una etiqueta y su campo en una fila de la ficha.
+        private void AgregarCampo(string texto, Control campo, int fila)
+        {
+            Label etiqueta = CrearEtiqueta(texto);
             campo.Dock = DockStyle.Fill;
-            campo.Margin = new Padding(6, 8, 6, 8);
+            campo.Margin = new Padding(3, 6, 3, 6);
 
             tableLayoutPanel1.Controls.Add(etiqueta, 0, fila);
             tableLayoutPanel1.Controls.Add(campo, 1, fila);
         }
 
-        // Carga los datos necesarios al abrir la ventana.
+        private static Label CrearEtiqueta(string texto)
+        {
+            Label etiqueta = new Label();
+            etiqueta.Text = texto;
+            etiqueta.AutoSize = true;
+            etiqueta.Anchor = AnchorStyles.Left;
+            etiqueta.Margin = new Padding(3, 10, 3, 3);
+            etiqueta.Font = TemaVisual.Fuentes.Etiqueta;
+            etiqueta.ForeColor = TemaVisual.Colores.Texto;
+            return etiqueta;
+        }
+
+        // Carga las reservas al abrir la ventana y deja la ficha vacía.
         private void FrmReservas_Load(object sender, EventArgs e)
         {
             try
             {
-                CargarHuespedes();
-                CargarHabitacionesDisponibles();
-                CargarReservasProximas();
-                CalcularResumen();
-            }
-            catch (FormatException ex)
-            {
-                MostrarAdvertencia(ex.Message);
-            }
-            catch (ArgumentException ex)
-            {
-                MostrarAdvertencia(ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                MostrarAdvertencia(ex.Message);
+                CargarReservas();
+                LimpiarFormulario();
             }
             catch (SqlException)
             {
@@ -255,31 +593,305 @@ namespace Hotel_Zormat
             }
         }
 
+        // Vuelve a consultar todas las reservas y aplica los filtros
+        // actuales (estado + búsqueda de huésped), combinados en AND.
+        private void CargarReservas()
+        {
+            List<Reserva> todas = _reservaService.ObtenerTodas();
+            List<Reserva> filtradasPorEstado = AplicarFiltroEstado(todas);
+            List<Reserva> filtradasPorHuesped =
+                AplicarFiltroHuesped(filtradasPorEstado);
+
+            dgvReservasProximas.DataSource = null;
+            dgvReservasProximas.DataSource = filtradasPorHuesped;
+        }
+
+        // Deja sólo las reservas del estado elegido. El servicio no ofrece
+        // este filtro, así que se recorta la lista ya devuelta.
+        private List<Reserva> AplicarFiltroEstado(List<Reserva> origen)
+        {
+            if (origen == null || _cboFiltroEstado == null)
+            {
+                return origen;
+            }
+
+            string estado = _cboFiltroEstado.SelectedItem as string;
+
+            if (string.IsNullOrEmpty(estado) || estado == "Todas")
+            {
+                return origen;
+            }
+
+            List<Reserva> filtradas = new List<Reserva>();
+
+            foreach (Reserva reserva in origen)
+            {
+                if (reserva.Estado == estado)
+                {
+                    filtradas.Add(reserva);
+                }
+            }
+
+            return filtradas;
+        }
+
+        // Deja sólo las reservas cuyo huésped coincide con el criterio
+        // buscado (nombre o documento). La grilla ya no muestra el nombre
+        // del huésped (sólo su documento), así que primero se resuelve qué
+        // documentos coinciden consultando HuespedService.Buscar, y luego
+        // se recorta la lista de reservas por ese conjunto. Es una llamada
+        // real a la base de datos: puede lanzar SqlException, ya capturada
+        // en quien llama a CargarReservas().
+        private List<Reserva> AplicarFiltroHuesped(List<Reserva> origen)
+        {
+            if (origen == null || _txtBuscarHuesped == null)
+            {
+                return origen;
+            }
+
+            string criterio = _txtBuscarHuesped.Text.Trim();
+
+            if (criterio == "")
+            {
+                return origen;
+            }
+
+            List<Huesped> coincidencias = _huespedService.Buscar(criterio);
+            HashSet<string> documentos = new HashSet<string>();
+
+            foreach (Huesped huesped in coincidencias)
+            {
+                documentos.Add(huesped.NumeroDocumento);
+            }
+
+            List<Reserva> filtradas = new List<Reserva>();
+
+            foreach (Reserva reserva in origen)
+            {
+                if (documentos.Contains(reserva.NumeroDocumentoHuesped))
+                {
+                    filtradas.Add(reserva);
+                }
+            }
+
+            return filtradas;
+        }
+
+        // Vuelve a cargar la tabla cuando cambia el filtro de estado.
+        private void filtroEstado_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                CargarReservas();
+                LimpiarFormulario();
+            }
+            catch (SqlException)
+            {
+                MostrarAdvertencia(
+                    "No se pudo aplicar el filtro de reservas.");
+            }
+            catch (Exception ex)
+            {
+                MostrarError(ex);
+            }
+        }
+
+        // Aplica el filtro de huésped al presionar Enter en la caja de
+        // búsqueda.
+        private void txtBuscarHuesped_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode != Keys.Enter)
+            {
+                return;
+            }
+
+            e.SuppressKeyPress = true;
+
+            try
+            {
+                CargarReservas();
+                LimpiarFormulario();
+            }
+            catch (SqlException)
+            {
+                MostrarAdvertencia(
+                    "No se pudo buscar el huésped en la base de datos.");
+            }
+            catch (Exception ex)
+            {
+                MostrarError(ex);
+            }
+        }
+
+        // Carga en la ficha la reserva que se seleccionó en la tabla.
+        private void dgvReservasProximas_SelectionChanged(
+            object sender,
+            EventArgs e)
+        {
+            // La grilla puede disparar SelectionChanged en un estado
+            // transitorio donde CurrentRow todavía no refleja la fila recién
+            // marcada — pasa sobre todo en el primer clic después de que
+            // LimpiarFormulario() deja la grilla sin selección. Se difiere
+            // la lectura real con BeginInvoke para que corra ya asentada la
+            // selección, en vez de leerla a medio actualizar.
+            BeginInvoke(new MethodInvoker(CargarReservaSeleccionada));
+        }
+
+        // Lee la reserva realmente seleccionada y llena la ficha. Separado
+        // de dgvReservasProximas_SelectionChanged para poder diferirlo con
+        // BeginInvoke (ver comentario arriba).
+        private void CargarReservaSeleccionada()
+        {
+            if (_limpiandoFormulario)
+            {
+                return;
+            }
+
+            if (dgvReservasProximas.CurrentRow == null)
+            {
+                return;
+            }
+
+            Reserva reserva =
+                dgvReservasProximas.CurrentRow.DataBoundItem as Reserva;
+
+            if (reserva == null)
+            {
+                return;
+            }
+
+            _idReservaSeleccionada = reserva.IdReserva;
+
+            _huespedEditado =
+                _huespedService.BuscarPorDocumento(
+                    reserva.NumeroDocumentoHuesped);
+
+            _txtHuesped.Text = _huespedEditado != null
+                ? _huespedEditado.Nombre + " " + _huespedEditado.Apellido
+                : reserva.NumeroDocumentoHuesped;
+
+            CargarHabitacionesParaEdicion(reserva);
+            cboHabitacion.SelectedValue = reserva.NumeroHabitacion;
+
+            dtpCheckIn.Value = reserva.FechaCheckIn;
+            dtpCheckOut.Value = reserva.FechaCheckOut;
+            cboTemporada.SelectedItem = reserva.Temporada;
+            cboEstadoReserva.SelectedItem = reserva.Estado;
+
+            CalcularResumen();
+            ActualizarEstadoControles();
+        }
+
+        // Carga las habitaciones disponibles más la que ya tiene asignada
+        // la reserva que se está editando (que no aparece como "Disponible"
+        // porque esta misma reserva la puso en "Reservada").
+        private void CargarHabitacionesParaEdicion(Reserva reservaActual)
+        {
+            List<Habitacion> todas = _habitacionService.ObtenerTodas();
+            List<Habitacion> opciones = new List<Habitacion>();
+            bool incluidaActual = false;
+
+            foreach (Habitacion habitacion in todas)
+            {
+                bool esLaActual = reservaActual != null &&
+                    habitacion.Numero == reservaActual.NumeroHabitacion;
+
+                if (habitacion.Estado == "Disponible" || esLaActual)
+                {
+                    opciones.Add(habitacion);
+                }
+
+                if (esLaActual)
+                {
+                    incluidaActual = true;
+                }
+            }
+
+            if (incluidaActual == false && reservaActual != null)
+            {
+                Habitacion actual = _habitacionService.Buscar(
+                    reservaActual.NumeroHabitacion);
+
+                if (actual != null)
+                {
+                    opciones.Add(actual);
+                }
+            }
+
+            cboHabitacion.DataSource = null;
+            cboHabitacion.DisplayMember = "Numero";
+            cboHabitacion.ValueMember = "Numero";
+            cboHabitacion.DataSource = opciones;
+        }
+
+        // Abre el buscador y toma el huesped que el usuario elija.
+        private void btnBuscarHuesped_Click(object sender, EventArgs e)
+        {
+            using (FrmBuscarHuesped buscador = new FrmBuscarHuesped())
+            {
+                if (buscador.ShowDialog(this) == DialogResult.OK)
+                {
+                    _huespedEditado = buscador.HuespedSeleccionado;
+                    _txtHuesped.Text =
+                        _huespedEditado.Nombre + " " + _huespedEditado.Apellido;
+                }
+            }
+        }
+
         // Vuelve a calcular noches y monto cuando cambia un dato.
         private void DatosReserva_Changed(object sender, EventArgs e)
         {
             CalcularResumen();
         }
 
-        // Guarda una reserva con los datos escritos.
-        private void btnGuardar_Click(object sender, EventArgs e)
+        // Abre el dialogo de alta y refresca la tabla al volver.
+        private void btnNuevaReserva_Click(object sender, EventArgs e)
         {
+            using (FrmNuevaReserva formulario =
+                new FrmNuevaReserva(_usuarioActual))
+            {
+                formulario.ShowDialog(this);
+            }
+
+            try
+            {
+                CargarReservas();
+            }
+            catch (SqlException)
+            {
+                MostrarAdvertencia(
+                    "No se pudo actualizar la lista de reservas.");
+            }
+            catch (Exception ex)
+            {
+                MostrarError(ex);
+            }
+        }
+
+        // Actualiza la reserva seleccionada con los datos de la ficha.
+        private void btnActualizar_Click(object sender, EventArgs e)
+        {
+            if (_idReservaSeleccionada.HasValue == false)
+            {
+                MostrarAdvertencia("Seleccione una reserva para actualizar.");
+                return;
+            }
+
             btnGuardar.Enabled = false;
 
             try
             {
-                Reserva reserva = CrearReservaDesdeFormulario();
-                _reservaService.Guardar(reserva);
+                Reserva reserva = CrearReservaActualizada();
+                _reservaService.Actualizar(reserva);
 
                 MessageBox.Show(
-                    "La reserva fue guardada correctamente.",
+                    "La reserva fue actualizada correctamente.",
                     "Hotel Bisono",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
 
-                CargarHabitacionesDisponibles();
-                CargarReservasProximas();
-                PrepararNuevaReserva();
+                CargarReservas();
+                LimpiarFormulario();
             }
             catch (FormatException ex)
             {
@@ -296,7 +908,7 @@ namespace Hotel_Zormat
             catch (SqlException)
             {
                 MostrarAdvertencia(
-                    "No se pudo guardar la reserva en la base de datos.");
+                    "No se pudo actualizar la reserva en la base de datos.");
             }
             catch (Exception ex)
             {
@@ -304,24 +916,78 @@ namespace Hotel_Zormat
             }
             finally
             {
-                btnGuardar.Enabled = true;
+                ActualizarEstadoControles();
             }
         }
 
-        // Convierte los controles en un objeto Reserva.
-        private Reserva CrearReservaDesdeFormulario()
+        // Elimina la reserva seleccionada despues de pedir confirmacion.
+        private void btnEliminar_Click(object sender, EventArgs e)
         {
-            Huesped huesped = cboHuesped.SelectedItem as Huesped;
+            if (_idReservaSeleccionada.HasValue == false)
+            {
+                MostrarAdvertencia("Seleccione una reserva para eliminar.");
+                return;
+            }
+
+            DialogResult respuesta = MessageBox.Show(
+                "¿Desea eliminar la reserva #" +
+                _idReservaSeleccionada.Value + "?",
+                "Confirmar eliminación",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (respuesta != DialogResult.Yes)
+            {
+                return;
+            }
+
+            _btnEliminar.Enabled = false;
+
+            try
+            {
+                _reservaService.Eliminar(_idReservaSeleccionada.Value);
+
+                MessageBox.Show(
+                    "La reserva fue eliminada.",
+                    "Hotel Bisono",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+
+                CargarReservas();
+                LimpiarFormulario();
+            }
+            catch (InvalidOperationException ex)
+            {
+                MostrarAdvertencia(ex.Message);
+            }
+            catch (SqlException)
+            {
+                MostrarAdvertencia(
+                    "No se pudo eliminar la reserva. Puede tener datos relacionados.");
+            }
+            catch (Exception ex)
+            {
+                MostrarError(ex);
+            }
+            finally
+            {
+                ActualizarEstadoControles();
+            }
+        }
+
+        // Convierte los controles de la ficha en la reserva actualizada.
+        private Reserva CrearReservaActualizada()
+        {
             Habitacion habitacion = cboHabitacion.SelectedItem as Habitacion;
 
-            if (huesped == null)
+            if (_huespedEditado == null)
             {
                 throw new FormatException("Seleccione un huesped.");
             }
 
             if (habitacion == null)
             {
-                throw new FormatException("Seleccione una habitacion disponible.");
+                throw new FormatException("Seleccione una habitacion.");
             }
 
             if (cboTemporada.SelectedIndex < 0)
@@ -344,7 +1010,8 @@ namespace Hotel_Zormat
                 cboTemporada.Text);
 
             Reserva reserva = new Reserva();
-            reserva.NumeroDocumentoHuesped = huesped.NumeroDocumento;
+            reserva.IdReserva = _idReservaSeleccionada.Value;
+            reserva.NumeroDocumentoHuesped = _huespedEditado.NumeroDocumento;
             reserva.NumeroHabitacion = habitacion.Numero;
             reserva.FechaCheckIn = dtpCheckIn.Value.Date;
             reserva.FechaCheckOut = dtpCheckOut.Value.Date;
@@ -356,50 +1023,12 @@ namespace Hotel_Zormat
             return reserva;
         }
 
-        // Carga los huespedes en su lista.
-        private void CargarHuespedes()
-        {
-            List<Huesped> huespedes = _huespedService.ObtenerTodos();
-            cboHuesped.DataSource = null;
-            cboHuesped.DisplayMember = "NumeroDocumento";
-            cboHuesped.ValueMember = "NumeroDocumento";
-            cboHuesped.DataSource = huespedes;
-        }
-
-        // Carga solamente las habitaciones disponibles.
-        private void CargarHabitacionesDisponibles()
-        {
-            List<Habitacion> habitaciones = _habitacionService.ObtenerTodas();
-            List<Habitacion> disponibles = new List<Habitacion>();
-
-            foreach (Habitacion habitacion in habitaciones)
-            {
-                if (habitacion.Estado == "Disponible")
-                {
-                    disponibles.Add(habitacion);
-                }
-            }
-
-            cboHabitacion.DataSource = null;
-            cboHabitacion.DisplayMember = "Numero";
-            cboHabitacion.ValueMember = "Numero";
-            cboHabitacion.DataSource = disponibles;
-        }
-
-        // Carga las reservas de los proximos siete dias.
-        private void CargarReservasProximas()
-        {
-            dgvReservasProximas.DataSource = null;
-            dgvReservasProximas.DataSource =
-                _reservaService.ObtenerProximasSieteDias();
-        }
-
-        // Calcula el resumen que se muestra antes de guardar.
+        // Calcula el resumen que se muestra en la ficha.
         private void CalcularResumen()
         {
             Habitacion habitacion = cboHabitacion.SelectedItem as Habitacion;
 
-            if (habitacion == null)
+            if (habitacion == null || cboTemporada.SelectedIndex < 0)
             {
                 LimpiarResumen();
                 return;
@@ -415,10 +1044,25 @@ namespace Hotel_Zormat
                     dtpCheckOut.Value,
                     habitacion.TarifaBase,
                     cboTemporada.Text);
+                decimal factor = _reservaService.ObtenerFactorTemporada(
+                    cboTemporada.Text);
 
                 lblNochesCalculadas.Text = "Noches: " + noches;
-                lblMontoCalculado.Text =
-                    "Monto estimado: RD$" + monto.ToString("N2");
+                lblMontoCalculado.Text = "RD$" + monto.ToString("N2");
+
+                if (_lblTarifaNoche != null)
+                {
+                    _lblTarifaNoche.Text =
+                        "Tarifa por noche: RD$" +
+                        habitacion.TarifaBase.ToString("N2");
+                }
+
+                if (_lblFactorTemporada != null)
+                {
+                    _lblFactorTemporada.Text =
+                        "Temporada " + cboTemporada.Text +
+                        " (factor " + factor.ToString("0.00") + ")";
+                }
             }
             catch (FormatException)
             {
@@ -442,28 +1086,55 @@ namespace Hotel_Zormat
         private void LimpiarResumen()
         {
             lblNochesCalculadas.Text = "Noches: 0";
-            lblMontoCalculado.Text = "Monto estimado: RD$0.00";
+            lblMontoCalculado.Text = "RD$0.00";
+
+            if (_lblTarifaNoche != null)
+            {
+                _lblTarifaNoche.Text = "Tarifa por noche: —";
+            }
+
+            if (_lblFactorTemporada != null)
+            {
+                _lblFactorTemporada.Text = "Temporada: —";
+            }
         }
 
-        // Deja fechas y opciones listas para otra reserva.
-        private void PrepararNuevaReserva()
+        // Deja la ficha vacía y deshabilitada: sin selección no hay nada
+        // que actualizar ni eliminar (el alta se hace en otro formulario).
+        private void LimpiarFormulario()
         {
+            _limpiandoFormulario = true;
+
+            _idReservaSeleccionada = null;
+            _huespedEditado = null;
+            _txtHuesped.Clear();
+            cboHabitacion.DataSource = null;
             dtpCheckIn.Value = DateTime.Today;
             dtpCheckOut.Value = DateTime.Today.AddDays(1);
-            cboTemporada.SelectedIndex = 0;
-            cboEstadoReserva.SelectedIndex = 1;
+            cboTemporada.SelectedIndex = -1;
+            cboEstadoReserva.SelectedIndex = -1;
+            LimpiarResumen();
 
-            if (cboHuesped.Items.Count > 0)
+            dgvReservasProximas.ClearSelection();
+            dgvReservasProximas.CurrentCell = null;
+
+            _limpiandoFormulario = false;
+            ActualizarEstadoControles();
+        }
+
+        // Habilita la ficha y los botones sólo cuando hay una reserva
+        // seleccionada.
+        private void ActualizarEstadoControles()
+        {
+            bool haySeleccion = _idReservaSeleccionada.HasValue;
+
+            tableLayoutPanel1.Enabled = haySeleccion;
+            btnGuardar.Enabled = haySeleccion;
+
+            if (_btnEliminar != null)
             {
-                cboHuesped.SelectedIndex = 0;
+                _btnEliminar.Enabled = haySeleccion;
             }
-
-            if (cboHabitacion.Items.Count > 0)
-            {
-                cboHabitacion.SelectedIndex = 0;
-            }
-
-            CalcularResumen();
         }
 
         // Configura una lista para aceptar solo opciones existentes.
@@ -471,12 +1142,6 @@ namespace Hotel_Zormat
         {
             combo.DropDownStyle = ComboBoxStyle.DropDownList;
             TemaVisual.EstilizarCombo(combo);
-        }
-
-        // Configura la tabla de reservas para consulta.
-        private static void ConfigurarGrid(DataGridView grid)
-        {
-            TemaVisual.EstilizarGrid(grid);
         }
 
         // Muestra un mensaje que el usuario puede corregir.

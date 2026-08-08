@@ -15,6 +15,10 @@ namespace Hotel_Zormat
         private Usuario _usuarioActual;
         private string _documentoSeleccionado;
 
+        // Rótulo con el total de estadías del huésped seleccionado. Se crea
+        // por código para no modificar FrmHuespedes.Designer.cs.
+        private Label _lblTotalEstadias;
+
         // Este constructor permite abrir el formulario en el Disenador.
         public FrmHuespedes()
         {
@@ -57,7 +61,12 @@ namespace Hotel_Zormat
             ConfigurarFormatoDocumento();
 
             AplicarColorPrincipal(btnBuscar, "Buscar", TemaVisual.Glifos.Buscar);
-            AplicarColorPrincipal(btnGuardar, "Guardar", TemaVisual.Glifos.Guardar);
+            // "Actualizar" en vez de "Guardar": el alta de huéspedes ahora
+            // se hace desde el diálogo FrmNuevoHuesped (botón "Nuevo"), así
+            // que este botón embebido queda casi siempre para editar un
+            // huésped ya seleccionado. btnGuardar_Click no cambia — sigue
+            // decidiendo Crear/Actualizar según _documentoSeleccionado.
+            AplicarColorPrincipal(btnGuardar, "Actualizar", TemaVisual.Glifos.Guardar);
             AplicarColorSecundario(btnNuevo, "Nuevo", TemaVisual.Glifos.Nuevo);
 
             TemaVisual.EstilizarBoton(
@@ -83,6 +92,7 @@ namespace Hotel_Zormat
             txtBuscar.KeyDown += txtBuscar_KeyDown;
             cboTipoDocumento.SelectedIndexChanged +=
                 cboTipoDocumento_SelectedIndexChanged;
+            txtNumeroDocumento.MouseUp += txtNumeroDocumento_MouseUp;
         }
 
         // Organiza la lista y las pestanas de datos e historial.
@@ -130,6 +140,10 @@ namespace Hotel_Zormat
                 TemaVisual.Colores.FondoSecundario);
             marcoBuscar.Size = new Size(300, 36);
             marcoBuscar.Margin = new Padding(4, 2, 10, 0);
+            TemaVisual.AnteponerGlifo(
+                marcoBuscar,
+                txtBuscar,
+                TemaVisual.Glifos.Buscar);
 
             btnBuscar.Size = new Size(110, 36);
             btnBuscar.Margin = new Padding(0, 2, 0, 0);
@@ -194,9 +208,14 @@ namespace Hotel_Zormat
             barraBotones.BackColor = TemaVisual.Colores.Blanco;
             barraBotones.Padding = new Padding(0, 16, 0, 0);
 
-            btnNuevo.Size = new Size(112, 36);
-            btnGuardar.Size = new Size(112, 36);
-            btnEliminar.Size = new Size(112, 36);
+            // 132px en vez de 112px: "Actualizar" es más largo que
+            // "Guardar" y a 112px el texto quedaba recortado (PonerGlifo
+            // centra icono+texto; si no caben ambos, WinForms oculta el
+            // texto). Se ensanchan los tres para que la fila de botones
+            // conserve un ancho uniforme.
+            btnNuevo.Size = new Size(132, 36);
+            btnGuardar.Size = new Size(132, 36);
+            btnEliminar.Size = new Size(132, 36);
             btnNuevo.Margin = new Padding(0, 3, 8, 3);
             btnGuardar.Margin = new Padding(0, 3, 8, 3);
             btnEliminar.Margin = new Padding(0, 3, 0, 3);
@@ -209,9 +228,21 @@ namespace Hotel_Zormat
             tablaDatos.SetColumnSpan(barraBotones, 2);
             tabPage1.Controls.Add(tablaDatos);
 
+            _lblTotalEstadias = TemaVisual.CrearTituloSeccion(
+                "Sin huésped seleccionado",
+                TemaVisual.Glifos.Reserva);
+            _lblTotalEstadias.Dock = DockStyle.Top;
+            _lblTotalEstadias.BackColor = TemaVisual.Colores.Blanco;
+            _lblTotalEstadias.Margin = new Padding(0, 0, 0, 8);
+
             dgvHistorialEstadias.Parent = tabPage2;
             dgvHistorialEstadias.Dock = DockStyle.Fill;
             dgvHistorialEstadias.Margin = new Padding(0);
+
+            // El rótulo se agrega después para que quede por encima y la
+            // tabla, acoplada a Fill, ocupe el espacio restante.
+            tabPage2.Controls.Add(_lblTotalEstadias);
+            dgvHistorialEstadias.BringToFront();
         }
 
         // Agrega una etiqueta y su control en una fila.
@@ -278,6 +309,33 @@ namespace Hotel_Zormat
             }
 
             txtNumeroDocumento.Mask = "";
+        }
+
+        // Corrige la posición del cursor al hacer clic en txtNumeroDocumento.
+        //
+        // El campo se estira a todo el ancho del marco redondeado (ver
+        // TemaVisual.EnvolverCampo), mucho más ancho que sus 11 dígitos como
+        // máximo. Al hacer clic en la franja vacía a la derecha del texto ya
+        // escrito, WinForms no encuentra un carácter bajo el punto y coloca
+        // el cursor en la última posición de la máscara en vez de la primera
+        // posición vacía. Se corrige sólo para esa franja: un clic dentro
+        // del texto ya escrito se deja tal cual lo resolvió el control, para
+        // no interferir con la edición normal a mitad del valor. Mismo
+        // patrón que txtNumero_MouseUp en FrmHabitaciones.cs.
+        private void txtNumeroDocumento_MouseUp(
+            object sender,
+            MouseEventArgs e)
+        {
+            string escrito = txtNumeroDocumento.Text.TrimEnd(' ');
+            Size medida = TextRenderer.MeasureText(
+                escrito,
+                txtNumeroDocumento.Font);
+
+            if (e.X > medida.Width)
+            {
+                txtNumeroDocumento.SelectionStart = escrito.Length;
+                txtNumeroDocumento.SelectionLength = 0;
+            }
         }
 
         // Carga los huespedes cuando se abre la ventana.
@@ -401,10 +459,16 @@ namespace Hotel_Zormat
             }
         }
 
-        // Limpia los campos para registrar otro huesped.
+        // Abre el dialogo de alta de huespedes y refresca la lista al volver.
         private void btnNuevo_Click(object sender, EventArgs e)
         {
-            PrepararNuevoHuesped();
+            using (FrmNuevoHuesped formulario =
+                new FrmNuevoHuesped(_usuarioActual))
+            {
+                formulario.ShowDialog(this);
+            }
+
+            CargarHuespedes();
         }
 
         // Elimina el huesped seleccionado despues de pedir confirmacion.
@@ -556,9 +620,18 @@ namespace Hotel_Zormat
         {
             try
             {
-                dgvHistorialEstadias.DataSource = null;
-                dgvHistorialEstadias.DataSource =
+                List<Estadia> historial =
                     _huespedService.ObtenerHistorialEstadias(numeroDocumento);
+
+                dgvHistorialEstadias.DataSource = null;
+                dgvHistorialEstadias.DataSource = historial;
+
+                if (_lblTotalEstadias != null)
+                {
+                    int total = historial == null ? 0 : historial.Count;
+                    _lblTotalEstadias.Text =
+                        "Total de estadías: " + total;
+                }
             }
             catch (SqlException)
             {
@@ -585,6 +658,12 @@ namespace Hotel_Zormat
             dgvHuespedes.ClearSelection();
             dgvHuespedes.CurrentCell = null;
             dgvHistorialEstadias.DataSource = null;
+
+            if (_lblTotalEstadias != null)
+            {
+                _lblTotalEstadias.Text = "Sin huésped seleccionado";
+            }
+
             btnEliminar.Enabled = false;
             txtNumeroDocumento.Focus();
         }

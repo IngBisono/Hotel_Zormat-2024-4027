@@ -14,12 +14,23 @@ namespace Hotel_Zormat
     public partial class FrmReportes : Form
     {
         private readonly ReporteService reporteService;
+
+        // Se usa sólo para el denominador del indicador de ocupación: el
+        // reporte devuelve las habitaciones ocupadas, no el total del hotel.
+        private readonly HabitacionService habitacionService;
+
         private Usuario usuarioActual;
+
+        // Indicador de ocupación de la pestaña del día. Creado por código
+        // para no modificar FrmReportes.Designer.cs.
+        private Label _lblOcupacion;
+        private Label _lblDetalleOcupacion;
 
         public FrmReportes()
         {
             InitializeComponent();
             reporteService = new ReporteService();
+            habitacionService = new HabitacionService();
             ConfigurarPantalla();
         }
 
@@ -140,6 +151,8 @@ namespace Hotel_Zormat
             tabPage2.BackColor = TemaVisual.Colores.Blanco;
             tabPage2.Controls.Add(contenidoIngresos);
 
+            ConstruirIndicadorOcupacion();
+
             flpReportes.Visible = false;
             Controls.Add(tabControl);
             tabControl.Dock = DockStyle.Fill;
@@ -153,6 +166,87 @@ namespace Hotel_Zormat
                 TemaVisual.Glifos.Reportes);
             Controls.Add(encabezado);
             tabControl.BringToFront();
+        }
+
+        // Cabecera de la pestaña de ocupación: el porcentaje del día y el
+        // rótulo de la tabla, que lista únicamente habitaciones ocupadas
+        // porque es lo que devuelve ObtenerOcupacionDelDia.
+        private void ConstruirIndicadorOcupacion()
+        {
+            Panel barra = new Panel();
+            barra.Dock = DockStyle.Top;
+            barra.Height = 72;
+            barra.BackColor = TemaVisual.Colores.Blanco;
+
+            _lblOcupacion = new Label();
+            _lblOcupacion.Text = "—";
+            _lblOcupacion.Font = new Font("Georgia", 24F, FontStyle.Bold);
+            _lblOcupacion.ForeColor = TemaVisual.Colores.AzulMarino;
+            _lblOcupacion.AutoSize = false;
+            _lblOcupacion.Size = new Size(140, 38);
+            _lblOcupacion.Location = new Point(2, 4);
+            _lblOcupacion.TextAlign = ContentAlignment.MiddleLeft;
+
+            _lblDetalleOcupacion = new Label();
+            _lblDetalleOcupacion.Text = "Ocupación de hoy";
+            _lblDetalleOcupacion.Font = TemaVisual.Fuentes.Pequena;
+            _lblDetalleOcupacion.ForeColor = TemaVisual.Colores.TextoSuave;
+            _lblDetalleOcupacion.AutoSize = false;
+            _lblDetalleOcupacion.Size = new Size(320, 20);
+            _lblDetalleOcupacion.Location = new Point(4, 44);
+            _lblDetalleOcupacion.TextAlign = ContentAlignment.MiddleLeft;
+
+            Label rotuloTabla = TemaVisual.CrearTituloSeccion(
+                "Habitaciones ocupadas ahora",
+                TemaVisual.Glifos.Habitacion);
+            rotuloTabla.Location = new Point(360, 22);
+            rotuloTabla.Size = new Size(340, 32);
+            rotuloTabla.BackColor = TemaVisual.Colores.Blanco;
+
+            barra.Controls.Add(_lblOcupacion);
+            barra.Controls.Add(_lblDetalleOcupacion);
+            barra.Controls.Add(rotuloTabla);
+
+            tabPage1.Controls.Add(barra);
+            dgvOcupacionDelDia.BringToFront();
+        }
+
+        // Calcula el porcentaje con el total real de habitaciones del hotel.
+        private void ActualizarIndicadorOcupacion(int ocupadas)
+        {
+            if (_lblOcupacion == null)
+            {
+                return;
+            }
+
+            try
+            {
+                List<Habitacion> habitaciones =
+                    habitacionService.ObtenerTodas();
+                int total = habitaciones == null ? 0 : habitaciones.Count;
+
+                if (total <= 0)
+                {
+                    _lblOcupacion.Text = "—";
+                    _lblDetalleOcupacion.Text = "Ocupación de hoy";
+                    return;
+                }
+
+                int porcentaje = (int)Math.Round(
+                    (decimal)ocupadas * 100m / total);
+
+                _lblOcupacion.Text = porcentaje + "%";
+                _lblDetalleOcupacion.Text =
+                    "Ocupación de hoy · " + ocupadas + " de " +
+                    total + " habitaciones";
+            }
+            catch (Exception)
+            {
+                // El indicador es accesorio: si el total no se puede
+                // consultar, el reporte principal debe seguir mostrándose.
+                _lblOcupacion.Text = "—";
+                _lblDetalleOcupacion.Text = "Ocupación de hoy";
+            }
         }
 
         private void FrmReportes_Load(object sender, EventArgs e)
@@ -171,6 +265,7 @@ namespace Hotel_Zormat
                     reporteService.ObtenerOcupacionDelDia();
 
                 dgvOcupacionDelDia.DataSource = ocupacion;
+                ActualizarIndicadorOcupacion(ocupacion.Count);
 
                 if (ocupacion.Count == 0)
                 {

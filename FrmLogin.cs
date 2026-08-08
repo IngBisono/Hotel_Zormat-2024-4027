@@ -181,6 +181,10 @@ namespace Hotel_Zormat
                 TemaVisual.Colores.Blanco);
             marcoUsuario.Dock = DockStyle.Fill;
             marcoUsuario.Margin = new Padding(0, 0, 0, 4);
+            TemaVisual.AnteponerGlifo(
+                marcoUsuario,
+                txtUsuario,
+                TemaVisual.Glifos.Huesped);
 
             txtContrasena.UseSystemPasswordChar = true;
             marcoContrasena = TemaVisual.EnvolverCampo(
@@ -188,6 +192,13 @@ namespace Hotel_Zormat
                 TemaVisual.Colores.Blanco);
             marcoContrasena.Dock = DockStyle.Fill;
             marcoContrasena.Margin = new Padding(0, 0, 0, 4);
+            // Escudo, no el ojo: ese glifo ya lo usa el botón de mostrar u
+            // ocultar la contraseña y repetirlo se leería como dos controles
+            // equivalentes.
+            TemaVisual.AnteponerGlifo(
+                marcoContrasena,
+                txtContrasena,
+                TemaVisual.Glifos.Administrador);
 
             PrepararBotonOjo();
 

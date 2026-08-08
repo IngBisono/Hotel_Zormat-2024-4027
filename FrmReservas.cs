@@ -1,3 +1,4 @@
+// Cedula: 402-3047435-1
 using Hotel_Zormat.Estilos;
 using HotelZormat.Modelo;
 using HotelZormat.Negocio;
@@ -139,12 +140,7 @@ namespace Hotel_Zormat
             _txtHuesped.ReadOnly = true;
             _txtHuesped.BackColor = TemaVisual.Colores.FondoSecundario;
 
-            // ReadOnly sólo bloquea la edición, no el foco: sin esto, el
-            // cursor puede quedar parpadeando en el campo como si se
-            // pudiera escribir ahí (por Tab o por clic directo). TabStop lo
-            // saca del ciclo de Tab; GotFocus cubre el clic directo,
-            // redirigiendo al botón "Buscar", la única forma real de
-            // completar este campo.
+            // Evita que el campo de solo lectura reciba foco por Tab o clic; redirige a "Buscar".
             _txtHuesped.TabStop = false;
             _txtHuesped.GotFocus += delegate { _btnBuscarHuesped.Focus(); };
 
@@ -168,10 +164,7 @@ namespace Hotel_Zormat
             _cboFiltroEstado.Items.Add("Cancelada");
             _cboFiltroEstado.SelectedIndex = 0;
 
-            // Caja de búsqueda por huésped (nombre o documento), ubicada en
-            // la barra superior a la derecha del filtro de Estado. Se
-            // dispara sólo con Enter (ver txtBuscarHuesped_KeyDown), no con
-            // cada tecla, porque HuespedService.Buscar consulta la BD.
+            // Caja de búsqueda por huésped (nombre o documento); dispara solo con Enter.
             _txtBuscarHuesped = new TextBox();
 
             TemaVisual.EstilizarGrid(dgvReservasProximas);
@@ -204,12 +197,7 @@ namespace Hotel_Zormat
             Size = new Size(1200, 760);
             MinimumSize = new Size(1040, 680);
 
-            // El SplitContainer se crea por código (no está en el
-            // Designer), así que nace con el tamaño diminuto por defecto de
-            // un control nuevo. Hay que emparentarlo (Controls.Add) primero
-            // para que el Dock.Fill le dé su ancho real; recién entonces se
-            // puede fijar SplitterDistance/Panel1MinSize/Panel2MinSize sin
-            // que WinForms los rechace por no caber en ese ancho todavía.
+            // Hay que emparentar el SplitContainer antes de fijar SplitterDistance/Panel1MinSize/Panel2MinSize.
             SplitContainer split = new SplitContainer();
             split.Dock = DockStyle.Fill;
             split.Orientation = Orientation.Vertical;
@@ -226,10 +214,7 @@ namespace Hotel_Zormat
 
             split.Panel1MinSize = 420;
             split.Panel2MinSize = 380;
-            // 680 -> 720: la caja de búsqueda de huésped y las 8 columnas
-            // explícitas de la grilla (antes 9 autogeneradas) necesitan un
-            // poco más de aire; Panel2 (ficha de edición, min 380) sigue
-            // sobrando con este ancho en un formulario de 1200px.
+            // Da más ancho a la grilla para la caja de búsqueda y las 8 columnas.
             split.SplitterDistance = 720;
             split.Panel1.Padding = new Padding(16, 12, 8, 16);
             split.Panel2.Padding = new Padding(8, 12, 16, 16);
@@ -259,9 +244,7 @@ namespace Hotel_Zormat
             barraSuperior.Controls.Add(lblFiltro);
             barraSuperior.Controls.Add(_cboFiltroEstado);
 
-            // Caja de búsqueda por huésped, directamente a la derecha del
-            // filtro de Estado (mismo FlowLayoutPanel, mismo orden de
-            // Controls.Add — WrapContents=false la mantiene en la fila).
+            // Caja de búsqueda por huésped, a la derecha del filtro de Estado.
             Label lblBuscarHuesped = CrearEtiqueta("Huésped:");
             lblBuscarHuesped.Margin = new Padding(16, 10, 4, 0);
 
@@ -372,30 +355,15 @@ namespace Hotel_Zormat
             flpReservas.Visible = false;
         }
 
-        // Reemplaza las columnas autogeneradas —que exponían IdReserva y
-        // encabezados literales de las propiedades del modelo ("Numero...")—
-        // por columnas explícitas, en el orden pedido, con encabezados en
-        // español y el mismo formato de fecha ("07-ago-26") y monto
-        // ("RD$3,500.00") que usa el resto de la aplicación. Se llama una
-        // única vez desde ConfigurarFormulario(), antes de la primera
-        // asignación de DataSource: con AutoGenerateColumns = false, cada
-        // refresco posterior de CargarReservas() sólo revincula filas, sin
-        // recrear ni duplicar columnas.
+        // Define las columnas explícitas de la grilla de reservas (reemplaza las autogeneradas).
         private void ConfigurarColumnasReservas()
         {
             dgvReservasProximas.AutoGenerateColumns = false;
             dgvReservasProximas.Columns.Clear();
 
-            // Cultura fija para que "MMM" salga en español ("ago") sin
-            // depender de la configuración regional de la máquina donde
-            // corra la app (el proyecto no fija CultureInfo.CurrentCulture
-            // en ningún lado).
+            // Cultura fija para que los meses salgan abreviados en español ("ago").
             CultureInfo formatoFechas = new CultureInfo("es-DO");
 
-            // Pesos ajustados a mano tras ver la grilla renderizada: "15-sept"
-            // (setiembre se abrevia con 4 letras en español, no 3 como
-            // "ago") y montos de varias cifras ("RD$22,000.00") necesitaban
-            // más espacio relativo que "Documento" o "Noches".
             dgvReservasProximas.Columns.Add(CrearColumnaTexto(
                 "NumeroDocumentoHuesped", "Documento", 15));
             dgvReservasProximas.Columns.Add(CrearColumnaTexto(
@@ -437,8 +405,7 @@ namespace Hotel_Zormat
             return columna;
         }
 
-        // Crea una columna de fecha con el formato "07-ago-26" usado en el
-        // resto de la aplicación.
+        // Crea una columna de fecha con el formato "07-ago-26" usado en la app.
         private static DataGridViewTextBoxColumn CrearColumnaFecha(
             string propiedad,
             string encabezado,
@@ -483,8 +450,7 @@ namespace Hotel_Zormat
             tableLayoutPanel1.Controls.Add(contenedor, 1, fila);
         }
 
-        // Arma la tarjeta de resumen. Misma fórmula y misma nota que
-        // siempre: ITBIS y propina se aplican al facturar, no aquí.
+        // Arma la tarjeta de resumen de la reserva (noches, tarifa, temporada, monto).
         private void ConstruirResumen()
         {
             panel1.Controls.Add(lblNochesCalculadas);
@@ -594,8 +560,7 @@ namespace Hotel_Zormat
             }
         }
 
-        // Vuelve a consultar todas las reservas y aplica los filtros
-        // actuales (estado + búsqueda de huésped), combinados en AND.
+        // Vuelve a consultar todas las reservas y aplica los filtros de estado y huésped.
         private void CargarReservas()
         {
             List<Reserva> todas = _reservaService.ObtenerTodas();
@@ -636,13 +601,7 @@ namespace Hotel_Zormat
             return filtradas;
         }
 
-        // Deja sólo las reservas cuyo huésped coincide con el criterio
-        // buscado (nombre o documento). La grilla ya no muestra el nombre
-        // del huésped (sólo su documento), así que primero se resuelve qué
-        // documentos coinciden consultando HuespedService.Buscar, y luego
-        // se recorta la lista de reservas por ese conjunto. Es una llamada
-        // real a la base de datos: puede lanzar SqlException, ya capturada
-        // en quien llama a CargarReservas().
+        // Deja sólo las reservas cuyo huésped coincide con el criterio buscado (nombre o documento).
         private List<Reserva> AplicarFiltroHuesped(List<Reserva> origen)
         {
             if (origen == null || _txtBuscarHuesped == null)
@@ -697,8 +656,7 @@ namespace Hotel_Zormat
             }
         }
 
-        // Aplica el filtro de huésped al presionar Enter en la caja de
-        // búsqueda.
+        // Aplica el filtro de huésped al presionar Enter en la caja de búsqueda.
         private void txtBuscarHuesped_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode != Keys.Enter)
@@ -729,18 +687,11 @@ namespace Hotel_Zormat
             object sender,
             EventArgs e)
         {
-            // La grilla puede disparar SelectionChanged en un estado
-            // transitorio donde CurrentRow todavía no refleja la fila recién
-            // marcada — pasa sobre todo en el primer clic después de que
-            // LimpiarFormulario() deja la grilla sin selección. Se difiere
-            // la lectura real con BeginInvoke para que corra ya asentada la
-            // selección, en vez de leerla a medio actualizar.
+            // Difiere la lectura porque SelectionChanged puede disparar antes de que CurrentRow se actualice.
             BeginInvoke(new MethodInvoker(CargarReservaSeleccionada));
         }
 
-        // Lee la reserva realmente seleccionada y llena la ficha. Separado
-        // de dgvReservasProximas_SelectionChanged para poder diferirlo con
-        // BeginInvoke (ver comentario arriba).
+        // Lee la reserva seleccionada y llena la ficha de edición.
         private void CargarReservaSeleccionada()
         {
             if (_limpiandoFormulario)
@@ -783,9 +734,7 @@ namespace Hotel_Zormat
             ActualizarEstadoControles();
         }
 
-        // Carga las habitaciones disponibles más la que ya tiene asignada
-        // la reserva que se está editando (que no aparece como "Disponible"
-        // porque esta misma reserva la puso en "Reservada").
+        // Carga las habitaciones disponibles más la que ya tiene asignada la reserva editada.
         private void CargarHabitacionesParaEdicion(Reserva reservaActual)
         {
             List<Habitacion> todas = _habitacionService.ObtenerTodas();
@@ -1128,9 +1077,7 @@ namespace Hotel_Zormat
             ActualizarEstadoControles();
         }
 
-        // Habilita la ficha y los botones sólo cuando hay una reserva
-        // seleccionada. "Eliminar" además exige Administrador — mismo
-        // patrón que FrmHabitaciones.cs/FrmHuespedes.cs.
+        // Habilita la ficha y los botones según haya selección; "Eliminar" exige Administrador.
         private void ActualizarEstadoControles()
         {
             bool haySeleccion = _idReservaSeleccionada.HasValue;

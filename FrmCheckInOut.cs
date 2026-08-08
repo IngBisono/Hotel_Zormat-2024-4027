@@ -1,3 +1,4 @@
+// Cedula: 402-3047435-1
 using Hotel_Zormat.Estilos;
 using HotelZormat.Modelo;
 using HotelZormat.Negocio;
@@ -95,12 +96,7 @@ namespace Hotel_Zormat
                 dgvEstadiasActivas_DataBindingComplete;
         }
 
-        // Reemplaza las columnas autogeneradas del grid de check-in por
-        // columnas explícitas, en el orden pedido, con encabezados en
-        // español. "Nombre" no es una propiedad de Reserva: se deja sin
-        // DataPropertyName y se llena a mano en
-        // dgvReservasConfirmadas_DataBindingComplete, una vez que el
-        // binding real ya ocurrió.
+        // Define las columnas explícitas del grid de check-in (reemplaza las autogeneradas).
         private void ConfigurarColumnasCheckIn()
         {
             dgvReservasConfirmadas.AutoGenerateColumns = false;
@@ -135,12 +131,7 @@ namespace Hotel_Zormat
             dgvReservasConfirmadas.Columns.Add(columnaMonto);
         }
 
-        // Reemplaza las columnas autogeneradas del grid de check-out.
-        // Estadia sólo aporta la fecha real (que además siempre sale null
-        // mientras la estadía sigue "Activa" — ver comentario en
-        // dgvEstadiasActivas_DataBindingComplete); ID, Nombre, Habitacion y
-        // Fecha Salida se resuelven vía la Reserva relacionada
-        // (Estadia.IdReserva) y se llenan a mano en el mismo handler.
+        // Define las columnas explícitas del grid de check-out (reemplaza las autogeneradas).
         private void ConfigurarColumnasCheckOut()
         {
             dgvEstadiasActivas.AutoGenerateColumns = false;
@@ -156,8 +147,7 @@ namespace Hotel_Zormat
                 "colFechaSalida", "Fecha Salida", 22));
         }
 
-        // Crea una columna de texto simple enlazada a una propiedad del
-        // modelo.
+        // Crea una columna de texto simple enlazada a una propiedad del modelo.
         private static DataGridViewTextBoxColumn CrearColumnaTexto(
             string propiedad,
             string encabezado,
@@ -172,8 +162,7 @@ namespace Hotel_Zormat
             return columna;
         }
 
-        // Crea una columna de fecha con el formato "07-ago-26" usado en el
-        // resto de la aplicación.
+        // Crea una columna de fecha con el formato "07-ago-26" usado en la app.
         private static DataGridViewTextBoxColumn CrearColumnaFecha(
             string propiedad,
             string encabezado,
@@ -191,10 +180,7 @@ namespace Hotel_Zormat
             return columna;
         }
 
-        // Crea una columna sin DataPropertyName: su valor se llena a mano
-        // en un handler DataBindingComplete, después de que el binding
-        // real ya ocurrió (Reserva/Estadia no traen nombre de huésped ni,
-        // en el caso de Estadia, número de habitación).
+        // Crea una columna sin DataPropertyName, cuyo valor se llena a mano en DataBindingComplete.
         private static DataGridViewTextBoxColumn CrearColumnaNoEnlazada(
             string nombreColumna,
             string encabezado,
@@ -654,9 +640,7 @@ namespace Hotel_Zormat
             }
         }
 
-        // Llena la columna "Nombre" del grid de check-in después de cada
-        // binding (Reserva no trae el nombre del huésped, sólo su
-        // documento).
+        // Llena la columna "Nombre" del grid de check-in después de cada binding.
         private void dgvReservasConfirmadas_DataBindingComplete(
             object sender,
             DataGridViewBindingCompleteEventArgs e)
@@ -675,13 +659,7 @@ namespace Hotel_Zormat
             }
         }
 
-        // Llena ID, Nombre, Habitacion y Fecha Salida del grid de
-        // check-out, resolviendo la Reserva relacionada a cada Estadia por
-        // su IdReserva. "Fecha Salida" muestra Reserva.FechaCheckOut (la
-        // fecha planeada), no Estadia.FechaSalidaReal: esa última siempre
-        // sale null mientras la estadía sigue "Activa" (RegistrarCheckOut
-        // exige que sea null para poder ejecutarse), así que bindearla
-        // directo dejaría la columna vacía en todas las filas de este grid.
+        // Llena ID, Nombre, Habitacion y Fecha Salida del grid de check-out, resolviendo la Reserva de cada Estadia.
         private void dgvEstadiasActivas_DataBindingComplete(
             object sender,
             DataGridViewBindingCompleteEventArgs e)
@@ -724,10 +702,7 @@ namespace Hotel_Zormat
             }
         }
 
-        // Resuelve "Nombre Apellido" a partir del documento del huésped,
-        // con respaldo si el huésped no existe o la consulta falla — mismo
-        // patrón defensivo que CargarReservaSeleccionada en
-        // FrmReservas.cs.
+        // Resuelve "Nombre Apellido" a partir del documento del huésped.
         private string ObtenerNombreCompletoHuesped(string numeroDocumento)
         {
             if (string.IsNullOrEmpty(numeroDocumento))
@@ -768,11 +743,7 @@ namespace Hotel_Zormat
 
             foreach (Reserva reserva in reservas)
             {
-                // El check-in es la confirmacion definitiva de la reserva
-                // (ver EstadiaService.RegistrarCheckIn): una reserva
-                // "Pendiente" o ya "Confirmada" puede llegar hasta aqui,
-                // sin necesitar un paso manual aparte en Reservaciones.
-                // Solo se descarta una reserva "Cancelada".
+                // Solo se descarta una reserva ya cancelada.
                 if (reserva.Estado == "Cancelada")
                 {
                     continue;
@@ -841,9 +812,7 @@ namespace Hotel_Zormat
 
             if (_usuarioActual != null && reserva != null)
             {
-                // El check-in confirma la reserva (ver
-                // EstadiaService.RegistrarCheckIn): solo se bloquea una
-                // reserva ya "Cancelada".
+                // Solo se bloquea una reserva ya cancelada.
                 if (reserva.Estado != "Cancelada" &&
                     reserva.FechaCheckIn.Date <= DateTime.Today)
                 {

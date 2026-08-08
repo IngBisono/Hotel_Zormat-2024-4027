@@ -1,3 +1,4 @@
+// Cedula: 402-3047435-1
 using Hotel_Zormat.Estilos;
 using HotelZormat.Modelo;
 using System;
@@ -185,16 +186,32 @@ namespace Hotel_Zormat
             picLogoFactura.Dock = DockStyle.Fill;
             picLogoFactura.Margin = new Padding(0);
 
+            Label direccion = new Label();
+            direccion.Text = "Av. Principal #123 · Santo Domingo, R.D.";
+            direccion.Dock = DockStyle.Bottom;
+            direccion.Height = 20;
+            direccion.Font = TemaVisual.Fuentes.Pequena;
+            direccion.ForeColor = TemaVisual.Colores.TextoSuave;
+            direccion.BackColor = Color.Transparent;
+            direccion.TextAlign = ContentAlignment.MiddleCenter;
+
             membrete.Padding = new Padding(20, 14, 20, 8);
+
+            // La dirección se agrega antes del logotipo para que éste, que se
+            // acopla a Fill, reparta el espacio restante por encima de ella.
+            membrete.Controls.Add(direccion);
             membrete.Controls.Add(picLogoFactura);
+            picLogoFactura.BringToFront();
 
             // Línea de olas bajo el logotipo, como en la portada de acceso.
+            // Se dibuja por encima de la dirección para no quedar detrás del
+            // texto, que es transparente y dejaría ver el trazo.
             membrete.Paint += delegate (object remitente, PaintEventArgs e)
             {
                 Control lienzo = (Control)remitente;
                 Rectangle area = new Rectangle(
                     24,
-                    lienzo.Height - 12,
+                    lienzo.Height - 34,
                     lienzo.Width - 48,
                     10);
                 TemaVisual.PintarOlas(e.Graphics, area);

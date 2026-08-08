@@ -1,3 +1,4 @@
+// Cedula: 402-3047435-1
 using Hotel_Zormat.Estilos;
 using HotelZormat.Modelo;
 using HotelZormat.Negocio;
@@ -17,6 +18,18 @@ namespace Hotel_Zormat
         private int? _numeroSeleccionado;
         private bool _cargandoFiltros;
         private bool _limpiandoFormulario;
+
+        // Cifras de la fila de indicadores. Se construyen por código para no
+        // modificar FrmHabitaciones.Designer.cs.
+        private Label _lblKpiTotal;
+        private Label _lblKpiDisponibles;
+        private Label _lblKpiOcupadas;
+        private Label _lblKpiLimpieza;
+
+        // Filtro por tipo. No existe en el diseñador ni en el servicio
+        // (Filtrar sólo acepta piso y estado), así que se resuelve en el
+        // cliente sobre la lista que ya se descarga.
+        private ComboBox _cboFiltroTipo;
 
         public FrmHabitaciones()
         {
@@ -128,6 +141,7 @@ namespace Hotel_Zormat
             dgvHabitaciones.SelectionChanged +=
                 dgvHabitaciones_SelectionChanged;
             txtNumero.KeyPress += txtNumero_KeyPress;
+            txtNumero.MouseUp += txtNumero_MouseUp;
             btnNuevo.Click += btnNuevo_Click;
             btnGuardar.Click += btnGuardar_Click;
             btnEliminar.Click += btnEliminar_Click;
@@ -141,8 +155,11 @@ namespace Hotel_Zormat
         // Organiza la lista, los filtros y el formulario de edicion.
         private void ConfigurarDistribucion()
         {
-            Size = new Size(1100, 680);
-            MinimumSize = new Size(940, 600);
+            // +20% de ancho / +5% de alto sobre el tamaño original
+            // (1100x680), para que la fila de botones del formulario de
+            // edición nunca se envuelva a una segunda línea y quede cortada.
+            Size = new Size(1320, 714);
+            MinimumSize = new Size(940, 660);
 
             splitContainer1.Parent = this;
             splitContainer1.Dock = DockStyle.Fill;
@@ -162,6 +179,11 @@ namespace Hotel_Zormat
             Panel encabezado = TemaVisual.CrearEncabezado(
                 "Gestión de Habitaciones",
                 TemaVisual.Glifos.Habitacion);
+
+            // El orden importa: el acoplamiento se resuelve del índice más
+            // alto al más bajo, así que el encabezado se agrega después de la
+            // fila de indicadores para quedar por encima de ella.
+            Controls.Add(ConstruirFilaIndicadores());
             Controls.Add(encabezado);
             splitContainer1.BringToFront();
 
@@ -177,16 +199,34 @@ namespace Hotel_Zormat
 
             Label lblFiltroPiso = CrearEtiqueta("Piso:");
             Label lblFiltroEstado = CrearEtiqueta("Estado:");
+            Label lblFiltroTipo = CrearEtiqueta("Tipo:");
 
-            cboFiltroPiso.Width = 130;
-            cboFiltroEstado.Width = 145;
+            cboFiltroPiso.Width = 110;
+            cboFiltroEstado.Width = 130;
             cboFiltroPiso.Margin = new Padding(4, 2, 16, 0);
-            cboFiltroEstado.Margin = new Padding(4, 2, 0, 0);
+            cboFiltroEstado.Margin = new Padding(4, 2, 16, 0);
+
+            _cboFiltroTipo = new ComboBox();
+            _cboFiltroTipo.DropDownStyle = ComboBoxStyle.DropDownList;
+            _cboFiltroTipo.Width = 130;
+            _cboFiltroTipo.Margin = new Padding(4, 2, 0, 0);
+            _cboFiltroTipo.Items.Add("Todos");
+            _cboFiltroTipo.Items.Add("Sencilla");
+            _cboFiltroTipo.Items.Add("Doble");
+            _cboFiltroTipo.Items.Add("Suite");
+            _cboFiltroTipo.SelectedIndex = 0;
+            TemaVisual.EstilizarCombo(_cboFiltroTipo);
+
+            // Reutiliza el manejador ya existente, que además está protegido
+            // contra recargas mientras se repueblan los combos.
+            _cboFiltroTipo.SelectedIndexChanged += filtros_SelectedIndexChanged;
 
             flpHabitaciones.Controls.Add(lblFiltroPiso);
             flpHabitaciones.Controls.Add(cboFiltroPiso);
             flpHabitaciones.Controls.Add(lblFiltroEstado);
             flpHabitaciones.Controls.Add(cboFiltroEstado);
+            flpHabitaciones.Controls.Add(lblFiltroTipo);
+            flpHabitaciones.Controls.Add(_cboFiltroTipo);
 
             dgvHabitaciones.Parent = splitContainer1.Panel1;
             dgvHabitaciones.Dock = DockStyle.Fill;
@@ -228,7 +268,7 @@ namespace Hotel_Zormat
                 new RowStyle(SizeType.Percent, 100F));
 
             Label tituloFicha = TemaVisual.CrearTituloSeccion(
-                "Ficha de la habitación",
+                "Detalle de la habitación",
                 TemaVisual.Glifos.Habitacion);
             tituloFicha.Dock = DockStyle.Fill;
             tituloFicha.BackColor = TemaVisual.Colores.Blanco;
@@ -265,6 +305,90 @@ namespace Hotel_Zormat
 
             tableLayoutPanel1.Controls.Add(barraBotones, 0, 7);
             tableLayoutPanel1.SetColumnSpan(barraBotones, 2);
+        }
+
+        // Fila de indicadores con el resumen del inventario. Los conteos se
+        // calculan en el cliente sobre la lista que ya se descarga para el
+        // grid, así que no añade ninguna consulta extra a la base de datos.
+        private Panel ConstruirFilaIndicadores()
+        {
+            FlowLayoutPanel fila = new FlowLayoutPanel();
+            fila.Dock = DockStyle.Top;
+            fila.Height = 96;
+            fila.FlowDirection = FlowDirection.LeftToRight;
+            fila.WrapContents = false;
+            fila.AutoScroll = false;
+            fila.Padding = new Padding(16, 12, 16, 8);
+            fila.BackColor = TemaVisual.Colores.FondoClaro;
+
+            fila.Controls.Add(TemaVisual.CrearTarjetaIndicador(
+                "Total de habitaciones",
+                TemaVisual.Glifos.Habitacion,
+                TemaVisual.Colores.AzulPrimario,
+                out _lblKpiTotal));
+
+            fila.Controls.Add(TemaVisual.CrearTarjetaIndicador(
+                "Disponibles",
+                TemaVisual.Glifos.Confirmar,
+                TemaVisual.Colores.Verde,
+                out _lblKpiDisponibles));
+
+            fila.Controls.Add(TemaVisual.CrearTarjetaIndicador(
+                "Ocupadas",
+                TemaVisual.Glifos.Huesped,
+                TemaVisual.Colores.Rojo,
+                out _lblKpiOcupadas));
+
+            fila.Controls.Add(TemaVisual.CrearTarjetaIndicador(
+                "En limpieza",
+                TemaVisual.Glifos.Actualizar,
+                TemaVisual.Colores.AzulGris,
+                out _lblKpiLimpieza));
+
+            return fila;
+        }
+
+        // Refresca las cifras de los indicadores con el inventario completo.
+        private void ActualizarIndicadores(List<Habitacion> habitaciones)
+        {
+            if (_lblKpiTotal == null || habitaciones == null)
+            {
+                return;
+            }
+
+            int disponibles = 0;
+            int ocupadas = 0;
+            int limpieza = 0;
+
+            foreach (Habitacion habitacion in habitaciones)
+            {
+                if (string.Equals(
+                        habitacion.Estado,
+                        "Disponible",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    disponibles = disponibles + 1;
+                }
+                else if (string.Equals(
+                        habitacion.Estado,
+                        "Ocupada",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    ocupadas = ocupadas + 1;
+                }
+                else if (string.Equals(
+                        habitacion.Estado,
+                        "Limpieza",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    limpieza = limpieza + 1;
+                }
+            }
+
+            _lblKpiTotal.Text = habitaciones.Count.ToString();
+            _lblKpiDisponibles.Text = disponibles.ToString();
+            _lblKpiOcupadas.Text = ocupadas.ToString();
+            _lblKpiLimpieza.Text = limpieza.ToString();
         }
 
         // Agrega una etiqueta y su control en una fila del formulario.
@@ -335,6 +459,7 @@ namespace Hotel_Zormat
                     _habitacionService.ObtenerTodas();
 
                 CargarPisos(habitaciones);
+                ActualizarIndicadores(habitaciones);
                 CargarHabitacionesFiltradas();
             }
             catch (SqlException)
@@ -388,9 +513,12 @@ namespace Hotel_Zormat
                 int? piso = ObtenerPisoSeleccionado();
                 string estado = ObtenerEstadoSeleccionado();
 
+                List<Habitacion> habitaciones =
+                    _habitacionService.Filtrar(piso, estado);
+
                 dgvHabitaciones.DataSource = null;
                 dgvHabitaciones.DataSource =
-                    _habitacionService.Filtrar(piso, estado);
+                    AplicarFiltroTipo(habitaciones);
 
                 LimpiarFormulario();
                 ColorearFilas();
@@ -405,6 +533,38 @@ namespace Hotel_Zormat
                 MostrarError(
                     "Ocurrió un error al aplicar los filtros.");
             }
+        }
+
+        // Deja sólo las habitaciones del tipo elegido. El servicio no ofrece
+        // este filtro, así que se recorta la lista ya devuelta.
+        private List<Habitacion> AplicarFiltroTipo(List<Habitacion> origen)
+        {
+            if (origen == null || _cboFiltroTipo == null)
+            {
+                return origen;
+            }
+
+            string tipo = _cboFiltroTipo.SelectedItem as string;
+
+            if (string.IsNullOrEmpty(tipo) || tipo == "Todos")
+            {
+                return origen;
+            }
+
+            List<Habitacion> filtradas = new List<Habitacion>();
+
+            foreach (Habitacion habitacion in origen)
+            {
+                if (string.Equals(
+                        habitacion.Tipo,
+                        tipo,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    filtradas.Add(habitacion);
+                }
+            }
+
+            return filtradas;
         }
 
         private int? ObtenerPisoSeleccionado()
@@ -701,6 +861,30 @@ namespace Hotel_Zormat
             if (char.IsDigit(e.KeyChar) == false)
             {
                 e.Handled = true;
+            }
+        }
+
+        // Corrige la posición del cursor al hacer clic en txtNumero.
+        //
+        // El campo se estira a todo el ancho del marco redondeado (ver
+        // TemaVisual.EnvolverCampo), mucho más ancho que sus 3 dígitos. Al
+        // hacer clic en la franja vacía a la derecha del texto ya escrito,
+        // WinForms no encuentra un carácter bajo el punto y coloca el cursor
+        // en la última posición de la máscara en vez de la primera posición
+        // vacía. Se corrige sólo para esa franja: un clic dentro del texto
+        // ya escrito se deja tal cual lo resolvió el control, para no
+        // interferir con la edición normal a mitad del valor.
+        private void txtNumero_MouseUp(
+            object sender,
+            MouseEventArgs e)
+        {
+            string escrito = txtNumero.Text.TrimEnd(' ');
+            Size medida = TextRenderer.MeasureText(escrito, txtNumero.Font);
+
+            if (e.X > medida.Width)
+            {
+                txtNumero.SelectionStart = escrito.Length;
+                txtNumero.SelectionLength = 0;
             }
         }
 

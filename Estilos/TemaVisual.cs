@@ -1,3 +1,4 @@
+// Cedula: 402-3047435-1
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -542,9 +543,22 @@ namespace Hotel_Zormat.Estilos
         // Lo comparten ocho de los nueve formularios.
         internal static Panel CrearEncabezado(string titulo, string glifo)
         {
+            return CrearEncabezado(titulo, null, glifo);
+        }
+
+        // Variante con subtitulo: la franja crece para alojar una linea de
+        // apoyo bajo el titulo. Si el subtitulo viene vacio se comporta igual
+        // que la version de una sola linea.
+        internal static Panel CrearEncabezado(
+            string titulo,
+            string subtitulo,
+            string glifo)
+        {
+            bool conSubtitulo = !string.IsNullOrEmpty(subtitulo);
+
             Panel encabezado = new Panel();
             encabezado.Dock = DockStyle.Top;
-            encabezado.Height = 62;
+            encabezado.Height = conSubtitulo ? 82 : 62;
             encabezado.BackColor = Colores.AzulMarino;
 
             encabezado.Paint += delegate (object remitente, PaintEventArgs e)
@@ -571,7 +585,7 @@ namespace Hotel_Zormat.Estilos
             icono.BackColor = Color.Transparent;
             icono.AutoSize = false;
             icono.Size = new Size(38, 38);
-            icono.Location = new Point(22, 12);
+            icono.Location = new Point(22, conSubtitulo ? 18 : 12);
             icono.TextAlign = ContentAlignment.MiddleCenter;
 
             Label texto = new Label();
@@ -580,12 +594,26 @@ namespace Hotel_Zormat.Estilos
             texto.ForeColor = Colores.Blanco;
             texto.BackColor = Color.Transparent;
             texto.AutoSize = false;
-            texto.Size = new Size(680, 38);
+            texto.Size = new Size(680, conSubtitulo ? 28 : 38);
             texto.Location = new Point(60, 12);
             texto.TextAlign = ContentAlignment.MiddleLeft;
 
             encabezado.Controls.Add(icono);
             encabezado.Controls.Add(texto);
+
+            if (conSubtitulo)
+            {
+                Label apoyo = new Label();
+                apoyo.Text = subtitulo;
+                apoyo.Font = Fuentes.Pequena;
+                apoyo.ForeColor = Colores.SolDurazno;
+                apoyo.BackColor = Color.Transparent;
+                apoyo.AutoSize = false;
+                apoyo.Size = new Size(680, 20);
+                apoyo.Location = new Point(60, 40);
+                apoyo.TextAlign = ContentAlignment.MiddleLeft;
+                encabezado.Controls.Add(apoyo);
+            }
 
             return encabezado;
         }
@@ -641,6 +669,35 @@ namespace Hotel_Zormat.Estilos
             marco.Controls.Add(campo);
 
             return marco;
+        }
+
+        // Antepone un glifo guía dentro de un marco creado por EnvolverCampo.
+        //
+        // El campo debe volver al frente porque WinForms resuelve el anclaje
+        // del último control de la colección al primero: el que ocupa el
+        // espacio restante (Dock.Fill) tiene que quedar en el índice cero.
+        internal static void AnteponerGlifo(
+            Panel marco,
+            Control campo,
+            string glifo)
+        {
+            if (marco == null || campo == null)
+            {
+                return;
+            }
+
+            Label icono = new Label();
+            icono.Text = glifo;
+            icono.Font = Fuentes.Icono(11F);
+            icono.ForeColor = Colores.TurquesaProfundo;
+            icono.BackColor = Color.Transparent;
+            icono.AutoSize = false;
+            icono.Width = 24;
+            icono.Dock = DockStyle.Left;
+            icono.TextAlign = ContentAlignment.MiddleCenter;
+
+            marco.Controls.Add(icono);
+            campo.BringToFront();
         }
 
         // Etiqueta de campo de formulario.
@@ -713,6 +770,69 @@ namespace Hotel_Zormat.Estilos
             }
 
             return titulo;
+        }
+
+        // Tarjeta de indicador: un glifo de acento a la izquierda y, a la
+        // derecha, la cifra sobre su rótulo. La etiqueta del valor se devuelve
+        // por parámetro para que el formulario la refresque con datos reales.
+        internal static Panel CrearTarjetaIndicador(
+            string rotulo,
+            string glifo,
+            Color acento,
+            out Label valor)
+        {
+            Panel tarjeta = new Panel();
+            tarjeta.Size = new Size(206, 76);
+            tarjeta.Margin = new Padding(0, 0, 12, 0);
+            AplicarTarjeta(
+                tarjeta,
+                Colores.Blanco,
+                Colores.BordeSutil,
+                Colores.FondoClaro,
+                12);
+
+            Label icono = new Label();
+            icono.Text = glifo;
+            icono.Font = Icono(20F);
+            icono.ForeColor = acento;
+            icono.BackColor = Color.Transparent;
+            icono.AutoSize = false;
+            icono.Size = new Size(44, 44);
+            icono.Location = new Point(14, 16);
+            icono.TextAlign = ContentAlignment.MiddleCenter;
+
+            valor = new Label();
+            valor.Text = "0";
+            valor.Font = new Font("Georgia", 19F, FontStyle.Bold);
+            valor.ForeColor = Colores.AzulMarino;
+            valor.BackColor = Color.Transparent;
+            valor.AutoSize = false;
+            valor.Size = new Size(132, 30);
+            valor.Location = new Point(62, 12);
+            valor.TextAlign = ContentAlignment.MiddleLeft;
+
+            Label texto = new Label();
+            texto.Text = rotulo;
+            texto.Font = Fuentes.Pequena;
+            texto.ForeColor = Colores.TextoSuave;
+            texto.BackColor = Color.Transparent;
+            texto.AutoSize = false;
+            texto.Size = new Size(132, 20);
+            texto.Location = new Point(62, 44);
+            texto.TextAlign = ContentAlignment.MiddleLeft;
+
+            tarjeta.Controls.Add(icono);
+            tarjeta.Controls.Add(valor);
+            tarjeta.Controls.Add(texto);
+
+            return tarjeta;
+        }
+
+        // Alias interno para poder usar Fuentes.Icono desde las fábricas sin
+        // repetir la ruta completa de la clase anidada.
+        private static Font Icono(float tamano)
+        {
+            return Fuentes.Icono(tamano);
         }
 
         // Distintivo compacto de color, usado para estados y avisos.

@@ -1,6 +1,7 @@
 using Hotel_Zormat.Estilos;
 using HotelZormat.Modelo;
 using HotelZormat.Negocio;
+using HotelZormat.Negocio.Excepciones;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
@@ -945,7 +946,8 @@ namespace Hotel_Zormat
 
             try
             {
-                _reservaService.Eliminar(_idReservaSeleccionada.Value);
+                _reservaService.Eliminar(
+                    _idReservaSeleccionada.Value, _usuarioActual);
 
                 MessageBox.Show(
                     "La reserva fue eliminada.",
@@ -955,6 +957,10 @@ namespace Hotel_Zormat
 
                 CargarReservas();
                 LimpiarFormulario();
+            }
+            catch (PermisoDenegadoException ex)
+            {
+                MostrarAdvertencia(ex.Message);
             }
             catch (InvalidOperationException ex)
             {
@@ -1123,7 +1129,8 @@ namespace Hotel_Zormat
         }
 
         // Habilita la ficha y los botones sólo cuando hay una reserva
-        // seleccionada.
+        // seleccionada. "Eliminar" además exige Administrador — mismo
+        // patrón que FrmHabitaciones.cs/FrmHuespedes.cs.
         private void ActualizarEstadoControles()
         {
             bool haySeleccion = _idReservaSeleccionada.HasValue;
@@ -1133,7 +1140,9 @@ namespace Hotel_Zormat
 
             if (_btnEliminar != null)
             {
-                _btnEliminar.Enabled = haySeleccion;
+                bool esAdministrador =
+                    AutorizacionService.EsAdministrador(_usuarioActual);
+                _btnEliminar.Enabled = haySeleccion && esAdministrador;
             }
         }
 

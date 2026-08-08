@@ -1,6 +1,7 @@
 using Hotel_Zormat.Estilos;
 using HotelZormat.Modelo;
 using HotelZormat.Negocio;
+using HotelZormat.Negocio.Excepciones;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
@@ -495,7 +496,7 @@ namespace Hotel_Zormat
                     return;
                 }
 
-                _huespedService.Eliminar(_documentoSeleccionado);
+                _huespedService.Eliminar(_documentoSeleccionado, _usuarioActual);
                 CargarHuespedes();
                 PrepararNuevoHuesped();
 
@@ -504,6 +505,10 @@ namespace Hotel_Zormat
                     "Hotel Bisono",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
+            }
+            catch (PermisoDenegadoException ex)
+            {
+                MostrarAdvertencia(ex.Message);
             }
             catch (InvalidOperationException ex)
             {
@@ -528,8 +533,19 @@ namespace Hotel_Zormat
             }
             finally
             {
-                btnEliminar.Enabled = _documentoSeleccionado != null;
+                ActualizarEstadoBotonEliminar();
             }
+        }
+
+        // Habilita "Eliminar" sólo para Administrador y sólo con un
+        // huésped seleccionado — mismo patrón que FrmHabitaciones.cs.
+        private void ActualizarEstadoBotonEliminar()
+        {
+            bool esAdministrador =
+                AutorizacionService.EsAdministrador(_usuarioActual);
+
+            btnEliminar.Enabled =
+                esAdministrador && _documentoSeleccionado != null;
         }
 
         // Muestra en los campos el huesped seleccionado.
@@ -558,7 +574,7 @@ namespace Hotel_Zormat
             txtApellido.Text = huesped.Apellido;
             txtTelefono.Text = huesped.Telefono;
             txtEmail.Text = huesped.Email;
-            btnEliminar.Enabled = true;
+            ActualizarEstadoBotonEliminar();
 
             CargarHistorial(huesped.NumeroDocumento);
         }
@@ -664,7 +680,7 @@ namespace Hotel_Zormat
                 _lblTotalEstadias.Text = "Sin huésped seleccionado";
             }
 
-            btnEliminar.Enabled = false;
+            ActualizarEstadoBotonEliminar();
             txtNumeroDocumento.Focus();
         }
 
